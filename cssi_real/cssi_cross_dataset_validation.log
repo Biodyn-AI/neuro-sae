@@ -1,0 +1,66 @@
+Device: cuda
+Loading brain dataset...
+Raw dataset: 11202 cells x 32344 genes
+Sampled dataset: 497 cells
+Half A: 248 cells | Half B: 249 cells
+Loading scGPT brain model...
+Model loaded  missing=0 unexpected=0
+Loading TRRUST...
+TRRUST raw: 8427 unique directed edges
+
+=== Extracting attention on Half A ===
+  Dataset: 248 cells x 1455 genes
+Extracted 12 layers, 1455 genes
+
+=== Extracting attention on Half B ===
+  Dataset: 249 cells x 1458 genes
+Extracted 12 layers, 1458 genes
+
+=== Evaluating AUROC per layer ===
+  Half A  Layer  0  AUROC=0.6207683698046115  pos_edges=24
+  Half A  Layer  1  AUROC=0.5966386455316972  pos_edges=24
+  Half A  Layer  2  AUROC=0.4608021404403403  pos_edges=24
+  Half A  Layer  3  AUROC=0.5382392220889233  pos_edges=24
+  Half A  Layer  4  AUROC=0.6100279195063592  pos_edges=24
+  Half A  Layer  5  AUROC=0.5433710533041273  pos_edges=24
+  Half A  Layer  6  AUROC=0.531452252751772  pos_edges=24
+  Half A  Layer  7  AUROC=0.4761142828691348  pos_edges=24
+  Half A  Layer  8  AUROC=0.5021853499443327  pos_edges=24
+  Half A  Layer  9  AUROC=0.5581828619341453  pos_edges=24
+  Half A  Layer 10  AUROC=0.6079084804427164  pos_edges=24
+  Half A  Layer 11  AUROC=0.5940514095809466  pos_edges=24
+  Half B  Layer  0  AUROC=0.6467412830075172  pos_edges=27
+  Half B  Layer  1  AUROC=0.604283025318586  pos_edges=27
+  Half B  Layer  2  AUROC=0.44650821220683273  pos_edges=27
+  Half B  Layer  3  AUROC=0.5085690948072961  pos_edges=27
+  Half B  Layer  4  AUROC=0.5663731779809281  pos_edges=27
+  Half B  Layer  5  AUROC=0.4888167371751214  pos_edges=27
+  Half B  Layer  6  AUROC=0.4722638703401117  pos_edges=27
+  Half B  Layer  7  AUROC=0.4249587132247555  pos_edges=27
+  Half B  Layer  8  AUROC=0.43828408847669503  pos_edges=27
+  Half B  Layer  9  AUROC=0.546230012368641  pos_edges=27
+  Half B  Layer 10  AUROC=0.643999786385038  pos_edges=27
+  Half B  Layer 11  AUROC=0.620513002642657  pos_edges=27
+
+Best layers on Half A: [0, 4, 10]
+Best layers on Half B: [0, 10, 11]
+Overlap: 2/3
+
+--- Cross-validation: layers selected on A, evaluated on B ---
+  Layer 0: A=0.6208  B=0.6467412830075172
+  Layer 4: A=0.6100  B=0.5663731779809281
+  Layer 10: A=0.6079  B=0.643999786385038
+
+--- Cross-validation: layers selected on B, evaluated on A ---
+  Layer 0: B=0.6467  A=0.6207683698046115
+  Layer 10: B=0.6440  A=0.6079084804427164
+  Layer 11: B=0.6205  A=0.5940514095809466
+
+Best-A layers mean AUROC on B: 0.6190
+Random-3 baseline on B: 0.5392 +/- 0.0397
+Improvement: 0.0799  (2.0 sigma)
+
+JSON saved to /mnt/d/openclaw/biodyn-nmi-paper/cssi_real/cssi_cross_dataset_results.json
+Report saved to /mnt/d/openclaw/biodyn-nmi-paper/CSSI_CROSS_VALIDATION_REPORT.md
+
+Done in 840s

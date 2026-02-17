@@ -1,0 +1,133 @@
+Starting CSSI Geneformer validation...
+Token dict: 20275 genes
+Device: cuda
+Loading Geneformer...
+`torch_dtype` is deprecated! Use `dtype` instead!
+Model: 18L x 18H
+Loading brain data...
+Data: (11202, 32344)
+Gene name mapping: 63793
+Loading ground truth...
+TRRUST loaded: 9396 edges
+TRRUST mapped: 8330 edges
+DoRothEA loaded: 7 edges
+DoRothEA mapped: 0 edges
+
+============================================================
+n_cells = 200
+Sampled: 197 cells
+Distribution: {'oligodendrocyte': np.int64(97), 'glutamatergic neuron': np.int64(42), 'astrocyte': np.int64(14), 'pvalb GABAergic cortical interneuron': np.int64(14), 'GABAergic interneuron': np.int64(14), 'oligodendrocyte precursor cell': np.int64(10), 'microglial cell': np.int64(6)}
+Tokenizing...
+Valid: 197 cells, median tokens: 2048
+Extracting attention...
+  Attention: 50/197 cells
+  Attention: 100/197 cells
+  Attention: 150/197 cells
+Done in 7.8s
+Building POOLED matrix...
+Building CSSI matrices...
+  glutamatergic neuron: 42 cells
+  GABAergic interneuron: 14 cells
+  oligodendrocyte precursor cell: 10 cells
+  microglial cell: 6 cells
+  astrocyte: 14 cells
+  pvalb GABAergic cortical interneuron: 14 cells
+  oligodendrocyte: 97 cells
+Common genes: 0
+Too few common genes, using top 200 from pooled
+
+--- Results (n=200, genes=200) ---
+  vs TRRUST:
+  POOLED: 0 positive edges in ground truth
+  CSSI-max: 0 positive edges in ground truth
+  CSSI-mean: 0 positive edges in ground truth
+  DoRothEA: no ground truth available
+
+============================================================
+n_cells = 500
+Sampled: 497 cells
+Distribution: {'oligodendrocyte': np.int64(244), 'glutamatergic neuron': np.int64(106), 'astrocyte': np.int64(35), 'pvalb GABAergic cortical interneuron': np.int64(35), 'GABAergic interneuron': np.int64(35), 'oligodendrocyte precursor cell': np.int64(25), 'microglial cell': np.int64(17)}
+Tokenizing...
+Valid: 497 cells, median tokens: 2048
+Extracting attention...
+  Attention: 50/497 cells
+  Attention: 100/497 cells
+  Attention: 150/497 cells
+  Attention: 200/497 cells
+  Attention: 250/497 cells
+  Attention: 300/497 cells
+  Attention: 350/497 cells
+  Attention: 400/497 cells
+  Attention: 450/497 cells
+Done in 20.0s
+Building POOLED matrix...
+Building CSSI matrices...
+  glutamatergic neuron: 106 cells
+  GABAergic interneuron: 35 cells
+  oligodendrocyte precursor cell: 25 cells
+  microglial cell: 17 cells
+  astrocyte: 35 cells
+  pvalb GABAergic cortical interneuron: 35 cells
+  oligodendrocyte: 244 cells
+Common genes: 0
+Too few common genes, using top 200 from pooled
+
+--- Results (n=500, genes=200) ---
+  vs TRRUST:
+  POOLED: 0 positive edges in ground truth
+  CSSI-max: 0 positive edges in ground truth
+  CSSI-mean: 0 positive edges in ground truth
+  DoRothEA: no ground truth available
+
+============================================================
+n_cells = 1000
+Sampled: 997 cells
+Distribution: {'oligodendrocyte': np.int64(488), 'glutamatergic neuron': np.int64(213), 'GABAergic interneuron': np.int64(71), 'pvalb GABAergic cortical interneuron': np.int64(70), 'astrocyte': np.int64(70), 'oligodendrocyte precursor cell': np.int64(51), 'microglial cell': np.int64(34)}
+Tokenizing...
+Valid: 997 cells, median tokens: 2048
+Extracting attention...
+  Attention: 50/997 cells
+  Attention: 100/997 cells
+  Attention: 150/997 cells
+  Attention: 200/997 cells
+  Attention: 250/997 cells
+  Attention: 300/997 cells
+  Attention: 350/997 cells
+  Attention: 400/997 cells
+  Attention: 450/997 cells
+  Attention: 500/997 cells
+  Attention: 550/997 cells
+  Attention: 600/997 cells
+  Attention: 650/997 cells
+  Attention: 700/997 cells
+  Attention: 750/997 cells
+  Attention: 800/997 cells
+  Attention: 850/997 cells
+  Attention: 900/997 cells
+  Attention: 950/997 cells
+Done in 30.6s
+Building POOLED matrix...
+Building CSSI matrices...
+  glutamatergic neuron: 213 cells
+  GABAergic interneuron: 71 cells
+  oligodendrocyte precursor cell: 51 cells
+  microglial cell: 34 cells
+  astrocyte: 70 cells
+  pvalb GABAergic cortical interneuron: 70 cells
+  oligodendrocyte: 488 cells
+Common genes: 0
+Too few common genes, using top 200 from pooled
+
+--- Results (n=1000, genes=200) ---
+  vs TRRUST:
+  POOLED: 0 positive edges in ground truth
+  CSSI-max: 0 positive edges in ground truth
+  CSSI-mean: 0 positive edges in ground truth
+  DoRothEA: no ground truth available
+
+============================================================
+SUMMARY
+Method       N      GT         AUROC    AUPRC    F1      
+-------------------------------------------------------
+
+Done!

@@ -1,0 +1,48 @@
+2026-02-15 16:27:56,328 - INFO - Starting Geneformer GRN validation
+2026-02-15 16:27:56,373 - INFO - Data: D:/openclaw/intelligence-augmentation/data/brain_scrna/DLPFC_11k.h5ad
+2026-02-15 16:27:56,423 - INFO - Model: D:/openclaw/intelligence-augmentation/models/Geneformer/Geneformer-V1-10M
+2026-02-15 16:27:56,471 - INFO - Output: D:/openclaw/biodyn-nmi-paper/multi_model_proper
+2026-02-15 16:27:56,532 - INFO - Cell counts: [200, 500, 1000]
+2026-02-15 16:27:56,581 - INFO - Using device: cpu
+2026-02-15 16:27:56,630 - INFO - Starting GRN validation pipeline
+2026-02-15 16:27:56,642 - INFO - Loading data from D:\openclaw\intelligence-augmentation\data\brain_scrna\DLPFC_11k.h5ad
+2026-02-15 16:28:01,627 - INFO - Loaded 11202 cells, 32344 genes
+2026-02-15 16:28:07,244 - INFO - After filtering: 11202 cells, 24919 genes
+2026-02-15 16:28:07,245 - INFO - Loading Geneformer model from D:\openclaw\intelligence-augmentation\models\Geneformer\Geneformer-V1-10M
+2026-02-15 16:28:07,313 - INFO - Loaded gene dictionary with 63675 genes
+2026-02-15 16:28:07,315 - INFO - Using manual tokenization (no Geneformer tokenizer)
+Some weights of BertModel were not initialized from the model checkpoint at D:\openclaw\intelligence-augmentation\models\Geneformer\Geneformer-V1-10M and are newly initialized: ['pooler.dense.bias', 'pooler.dense.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+2026-02-15 16:28:07,645 - INFO - Successfully loaded Geneformer model
+2026-02-15 16:28:07,646 - INFO - Downloading TRRUST reference data
+2026-02-15 16:28:13,624 - INFO - Downloaded 9396 TRRUST interactions
+2026-02-15 16:28:13,626 - INFO - Processing 200 cells
+2026-02-15 16:28:13,627 - INFO - Tokenizing 200 cells
+2026-02-15 16:28:14,569 - INFO - Tokenized 200 cells to tensor shape: torch.Size([200, 512])
+2026-02-15 16:28:14,574 - INFO - Extracting attention weights
+2026-02-15 16:28:30,671 - INFO - Extracted attention weights from 24 layer-head combinations
+2026-02-15 16:28:31,406 - INFO - Creating gene-gene attention matrices
+2026-02-15 16:28:33,385 - INFO - Created 24 gene-gene attention matrices
+2026-02-15 16:28:33,412 - INFO - Aggregating attention scores across layers/heads
+2026-02-15 16:28:33,414 - INFO - Ranking gene pairs by attention score
+2026-02-15 16:28:33,466 - INFO - Computing validation metrics (top-10000)
+2026-02-15 16:28:33,469 - INFO - Completed validation for 200 cells: Precision=0.0000, Recall=0.0000, F1=0.0000, AUROC=0.5000
+2026-02-15 16:28:33,470 - INFO - Processing 500 cells
+2026-02-15 16:28:33,471 - INFO - Tokenizing 500 cells
+2026-02-15 16:28:35,827 - INFO - Tokenized 500 cells to tensor shape: torch.Size([500, 512])
+2026-02-15 16:28:35,837 - INFO - Extracting attention weights
+2026-02-15 16:30:56,169 - INFO - Extracted attention weights from 24 layer-head combinations
+2026-02-15 16:30:58,832 - INFO - Creating gene-gene attention matrices
+2026-02-15 16:32:05,230 - INFO - Created 24 gene-gene attention matrices
+2026-02-15 16:32:05,471 - INFO - Aggregating attention scores across layers/heads
+2026-02-15 16:32:05,476 - INFO - Ranking gene pairs by attention score
+2026-02-15 16:32:05,558 - INFO - Computing validation metrics (top-10000)
+2026-02-15 16:32:05,563 - INFO - Completed validation for 500 cells: Precision=0.0000, Recall=0.0000, F1=0.0000, AUROC=0.5000
+2026-02-15 16:32:05,565 - INFO - Processing 1000 cells
+2026-02-15 16:32:05,566 - INFO - Tokenizing 1000 cells
+2026-02-15 16:32:13,374 - INFO - Tokenized 1000 cells to tensor shape: torch.Size([1000, 512])
+2026-02-15 16:32:13,398 - INFO - Extracting attention weights
+2026-02-15 16:35:01,684 - ERROR - Error processing 1000 cells: Unable to allocate 3.91 GiB for an array with shape (1000, 4, 512, 512) and data type float32
+2026-02-15 16:35:12,274 - INFO - Saving results
+2026-02-15 16:35:13,801 - INFO - Results saved to D:\openclaw\biodyn-nmi-paper\multi_model_proper
+2026-02-15 16:35:13,804 - INFO - Geneformer GRN validation completed successfully

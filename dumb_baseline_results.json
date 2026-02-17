@@ -1,0 +1,32 @@
+{
+  "TRRUST (28)": {
+    "det_rate": 0.7499362244897959,
+    "mean_expr": 0.7639030612244897,
+    "variance": 0.7725765306122448,
+    "attention_brain_pooled": 0.7174744897959184
+  },
+  "DoRothEA A+B (27)": {
+    "det_rate": 0.7971879286694102,
+    "mean_expr": 0.8167352537722908,
+    "variance": 0.8218106995884773,
+    "attention_brain_pooled": 0.7017832647462277
+  },
+  "DoRothEA A+B+C (65)": {
+    "det_rate": 0.8231952662721893,
+    "mean_expr": 0.8345325443786983,
+    "variance": 0.8355739644970415,
+    "attention_brain_pooled": 0.7518106508875739
+  },
+  "DoRothEA all (483)": {
+    "det_rate": 0.7160916288380507,
+    "mean_expr": 0.7261666859560459,
+    "variance": 0.7254491210472848,
+    "attention_brain_pooled": 0.6605692938801229
+  },
+  "OmniPath TF-reg (27)": {
+    "det_rate": 0.7971879286694102,
+    "mean_expr": 0.8167352537722908,
+    "variance": 0.8218106995884773,
+    "attention_brain_pooled": 0.7017832647462277
+  }
+}

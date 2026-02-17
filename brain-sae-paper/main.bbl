@@ -1,0 +1,100 @@
+\begin{thebibliography}{13}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[{The Tabula Sapiens Consortium}(2022)]{tabula2022tabula}
+{The Tabula Sapiens Consortium}.
+\newblock The {Tabula Sapiens}: A multiple-organ, single-cell transcriptomic
+  atlas of humans.
+\newblock \emph{Science}, 376\penalty0 (6594):\penalty0 eabl4896, 2022.
+
+\bibitem[Cui et~al.(2024)Cui, Wang, Maan, Pang, Luo, Duan, and
+  Wang]{cui2024scgpt}
+Haotian Cui, Chloe Wang, Hassaan Maan, Kuan Pang, Fengning Luo, Nan Duan, and
+  Bo~Wang.
+\newblock sc{GPT}: toward building a foundation model for single-cell
+  multi-omics using generative {AI}.
+\newblock \emph{Nature Methods}, 21\penalty0 (8):\penalty0 1470--1480, 2024.
+
+\bibitem[Theodoris et~al.(2023)Theodoris, Xiao, Chopra, Chaffin, Al~Sayed,
+  Hill, Manber, Beaver, Henber, and Ellinor]{theodoris2023geneformer}
+Christina~V Theodoris, Ling Xiao, Anant Chopra, Mark~D Chaffin, Zeina~R
+  Al~Sayed, Matthew~C Hill, Helene Manber, Cliff Beaver, Steven Henber, and
+  Patrick~T Ellinor.
+\newblock Transfer learning enables predictions in network biology.
+\newblock \emph{Nature}, 618\penalty0 (7965):\penalty0 616--624, 2023.
+
+\bibitem[Elhage et~al.(2022)Elhage, Hume, Olsson, Schiefer, Henighan, Kravec,
+  Hatfield-Dodds, Lasenby, Drain, Chen, et~al.]{elhage2022toy}
+Nelson Elhage, Tristan Hume, Catherine Olsson, Nicholas Schiefer, Tom Henighan,
+  Shauna Kravec, Zac Hatfield-Dodds, Robert Lasenby, Dawn Drain, Carol Chen,
+  et~al.
+\newblock Toy models of superposition.
+\newblock \emph{arXiv preprint arXiv:2209.10652}, 2022.
+
+\bibitem[Olah et~al.(2020)Olah, Cammarata, Schubert, Goh, Petrov, and
+  Carter]{olah2020zoom}
+Chris Olah, Nick Cammarata, Ludwig Schubert, Gabriel Goh, Michael Petrov, and
+  Shan Carter.
+\newblock Zoom in: An introduction to circuits.
+\newblock \emph{Distill}, 5\penalty0 (3):\penalty0 e00024--001, 2020.
+
+\bibitem[Bricken et~al.(2023)Bricken, Templeton, Batson, Chen, Jermyn, Conerly,
+  Turner, Anil, Denison, Askell, et~al.]{bricken2023monosemanticity}
+Trenton Bricken, Adly Templeton, Joshua Batson, Brian Chen, Adam Jermyn, Tom
+  Conerly, Nick Turner, Cem Anil, Carson Denison, Amanda Askell, et~al.
+\newblock Towards monosemanticity: Decomposing language models with dictionary
+  learning.
+\newblock \emph{Transformer Circuits Thread}, 2023.
+
+\bibitem[Cunningham et~al.(2023)Cunningham, Ewart, Riggs, Huben, and
+  Sharkey]{cunningham2023sparse}
+Hoagy Cunningham, Aidan Ewart, Logan Riggs, Robert Huben, and Lee Sharkey.
+\newblock Sparse autoencoders find highly interpretable features in language
+  models.
+\newblock \emph{arXiv preprint arXiv:2309.08600}, 2023.
+
+\bibitem[Templeton et~al.(2024)Templeton, Conerly, Marcus, Lindsey, Bricken,
+  Chen, Pearce, Citro, Ameisen, Jones, et~al.]{templeton2024scaling}
+Adly Templeton, Tom Conerly, Jonathan Marcus, Jack Lindsey, Trenton Bricken,
+  Brian Chen, Adam Pearce, Craig Citro, Emmanuel Ameisen, Andy Jones, et~al.
+\newblock Scaling monosemanticity: Extracting interpretable features from
+  {Claude} 3 {Sonnet}.
+\newblock \emph{Transformer Circuits Thread}, 2024.
+
+\bibitem[Yang et~al.(2022)Yang, Wang, Wang, Fang, Tang, Huang, Lu, and
+  Yao]{yang2022scbert}
+Fan Yang, Wenchuan Wang, Fang Wang, Yuan Fang, Duyu Tang, Junzhou Huang, Hui
+  Lu, and Jianhua Yao.
+\newblock sc{BERT} as a large-scale pretrained deep language model for cell
+  type annotation of single-cell {RNA}-seq data.
+\newblock \emph{Nature Machine Intelligence}, 4\penalty0 (10):\penalty0
+  852--866, 2022.
+
+\bibitem[Zhao et~al.(2024)]{zhao2024celllm}
+Shenghui Zhao et~al.
+\newblock Large-scale cell representation learning via divide-and-conquer
+  contrastive learning.
+\newblock \emph{arXiv preprint arXiv:2306.04371}, 2024.
+
+\bibitem[Wolf et~al.(2018)Wolf, Angerer, and Theis]{wolf2018scanpy}
+F~Alexander Wolf, Philipp Angerer, and Fabian~J Theis.
+\newblock {SCANPY}: large-scale single-cell gene expression data analysis.
+\newblock \emph{Genome Biology}, 19\penalty0 (1):\penalty0 1--5, 2018.
+
+\bibitem[Kingma and Ba(2014)]{kingma2014adam}
+Diederik~P Kingma and Jimmy Ba.
+\newblock Adam: A method for stochastic optimization.
+\newblock \emph{arXiv preprint arXiv:1412.6980}, 2014.
+
+\bibitem[Benjamini and Hochberg(1995)]{benjamini1995controlling}
+Yoav Benjamini and Yosef Hochberg.
+\newblock Controlling the false discovery rate: a practical and powerful
+  approach to multiple testing.
+\newblock \emph{Journal of the Royal Statistical Society: Series B},
+  57\penalty0 (1):\penalty0 289--300, 1995.
+
+\end{thebibliography}

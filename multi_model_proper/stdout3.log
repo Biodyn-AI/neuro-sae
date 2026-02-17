@@ -1,0 +1,110 @@
+Device: cuda
+
+=== Step 1: Loading Geneformer dictionaries ===
+  Tokens: 25426, Gene names: 40248, Medians: 25424
+
+=== Step 2: Loading DLPFC data ===
+  Shape: (11202, 32344)
+
+=== Step 3: Tokenizing cells ===
+  19905/32344 genes have token mapping
+  Subsetted matrix: (11202, 19905)
+    2000/11202 processed, 2000 valid
+    4000/11202 processed, 4000 valid
+    6000/11202 processed, 6000 valid
+    8000/11202 processed, 8000 valid
+    10000/11202 processed, 10000 valid
+  Total valid cells: 11202
+  Median tokens/cell: 2048
+
+=== Step 4: Loading Geneformer V1-10M ===
+  Model: 10.3M params, 6L×4H
+
+=== Step 5: Loading reference GRNs ===
+  TRRUST: 8427 unique edges
+  DoRothEA: 276562 unique edges
+  Union: 278078 edges
+
+=== Step 6: Attention-based GRN inference ===
+
+=== Step 7: Scaling experiments ===
+
+--- 200 cells ---
+    100/200 cells, 871242 edges
+    200/200 cells, 1564127 edges
+  Time: 8.3s, Edges: 1564127
+    trrust: 27859 edges, 39 positives (0.14%)
+    AUROC=0.4442, AUPRC=0.0014
+    Top-500: P=0.0000 R=0.0000 F1=0.0000
+    Top-1000: P=0.0010 R=0.0001 F1=0.0002
+    Top-5000: P=0.0018 R=0.0011 F1=0.0013
+    dorothea: 1514318 edges, 2140 positives (0.14%)
+    AUROC=0.4729, AUPRC=0.0013
+    Top-500: P=0.0040 R=0.0000 F1=0.0000
+    Top-1000: P=0.0020 R=0.0000 F1=0.0000
+    Top-5000: P=0.0012 R=0.0000 F1=0.0000
+    union: 1514318 edges, 2153 positives (0.14%)
+    AUROC=0.4728, AUPRC=0.0013
+    Top-500: P=0.0040 R=0.0000 F1=0.0000
+    Top-1000: P=0.0020 R=0.0000 F1=0.0000
+    Top-5000: P=0.0012 R=0.0000 F1=0.0000
+
+--- 500 cells ---
+    100/500 cells, 863576 edges
+    200/500 cells, 1564501 edges
+    300/500 cells, 2181575 edges
+    400/500 cells, 2742303 edges
+    500/500 cells, 3269295 edges
+  Time: 17.6s, Edges: 3269295
+    trrust: 58870 edges, 71 positives (0.12%)
+    AUROC=0.5485, AUPRC=0.0015
+    Top-500: P=0.0000 R=0.0000 F1=0.0000
+    Top-1000: P=0.0000 R=0.0000 F1=0.0000
+    Top-5000: P=0.0014 R=0.0008 F1=0.0010
+    dorothea: 3156090 edges, 4560 positives (0.14%)
+    AUROC=0.4864, AUPRC=0.0014
+    Top-500: P=0.0000 R=0.0000 F1=0.0000
+    Top-1000: P=0.0000 R=0.0000 F1=0.0000
+    Top-5000: P=0.0010 R=0.0000 F1=0.0000
+    union: 3156090 edges, 4587 positives (0.15%)
+    AUROC=0.4867, AUPRC=0.0014
+    Top-500: P=0.0000 R=0.0000 F1=0.0000
+    Top-1000: P=0.0000 R=0.0000 F1=0.0000
+    Top-5000: P=0.0010 R=0.0000 F1=0.0000
+
+--- 1000 cells ---
+    100/1000 cells, 838667 edges
+    200/1000 cells, 1529405 edges
+    300/1000 cells, 2154623 edges
+    400/1000 cells, 2723256 edges
+    500/1000 cells, 3231176 edges
+    600/1000 cells, 3713827 edges
+    700/1000 cells, 4172893 edges
+    800/1000 cells, 4599318 edges
+    900/1000 cells, 5006443 edges
+    1000/1000 cells, 5382836 edges
+  Time: 36.9s, Edges: 5382836
+    trrust: 94896 edges, 115 positives (0.12%)
+    AUROC=0.5224, AUPRC=0.0013
+    Top-500: P=0.0000 R=0.0000 F1=0.0000
+    Top-1000: P=0.0000 R=0.0000 F1=0.0000
+    Top-5000: P=0.0012 R=0.0007 F1=0.0009
+    dorothea: 5189126 edges, 7483 positives (0.14%)
+    AUROC=0.4863, AUPRC=0.0014
+    Top-500: P=0.0000 R=0.0000 F1=0.0000
+    Top-1000: P=0.0000 R=0.0000 F1=0.0000
+    Top-5000: P=0.0006 R=0.0000 F1=0.0000
+    union: 5189126 edges, 7514 positives (0.14%)
+    AUROC=0.4863, AUPRC=0.0014
+    Top-500: P=0.0000 R=0.0000 F1=0.0000
+    Top-1000: P=0.0000 R=0.0000 F1=0.0000
+    Top-5000: P=0.0006 R=0.0000 F1=0.0000
+
+================================================================================
+SUMMARY
+================================================================================
+  200 cells: TRRUST AUROC=0.44422385666095227, DoRothEA AUROC=0.4728831786022125
+  500 cells: TRRUST AUROC=0.5485015913607805, DoRothEA AUROC=0.48639748993958437
+  1000 cells: TRRUST AUROC=0.5224371698051756, DoRothEA AUROC=0.4863254066290734
+
+Done!

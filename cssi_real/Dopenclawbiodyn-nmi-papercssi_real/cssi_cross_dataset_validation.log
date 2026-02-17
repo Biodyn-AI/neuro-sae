@@ -1,0 +1,22 @@
+Device: cuda
+Loading brain dataset...
+Raw dataset: 11202 cells x 32344 genes
+Sampled dataset: 497 cells
+Half A: 248 cells | Half B: 249 cells
+Loading scGPT brain model...
+Traceback (most recent call last):
+  File "/mnt/d/openclaw/biodyn-nmi-paper/cssi_real/cssi_cross_dataset_validation.py", line 492, in <module>
+    main()
+  File "/mnt/d/openclaw/biodyn-nmi-paper/cssi_real/cssi_cross_dataset_validation.py", line 284, in main
+    wrapped_model, vocab_obj = load_model(device)
+                               ^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/openclaw/biodyn-nmi-paper/cssi_real/cssi_cross_dataset_validation.py", line 73, in load_model
+    vocab_obj = load_vocab(CKPT_DIR / "vocab.json")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/openclaw/mechinterp-bio/biodyn-work/single_cell_mechinterp/src/model/vocab.py", line 23, in load_vocab
+    with path.open("r", encoding="utf-8") as handle:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/pathlib.py", line 1015, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'D:\\openclaw\\mechinterp-bio\\biodyn-work\\single_cell_mechinterp/external/scGPT_checkpoints/brain/vocab.json'

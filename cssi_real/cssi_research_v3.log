@@ -1,0 +1,65 @@
+=== CSSI Research v3: Layers 5-17 + Head Analysis ===
+Device: cuda
+Loading model...
+Model: 18L x 18H
+Loading data...
+Loading TRRUST...
+TRRUST: 8330 edges
+Tokenizing...
+Valid: 497 cells, CTs: Counter({'oligodendrocyte': 244, 'glutamatergic neuron': 106, 'GABAergic interneuron': 35, 'pvalb GABAergic cortical interneuron': 35, 'astrocyte': 35, 'oligodendrocyte precursor cell': 25, 'microglial cell': 17})
+
+=== PHASE 1: Per-layer (layers 5-17) ===
+    Cell 100/497
+    Cell 200/497
+    Cell 300/497
+    Cell 400/497
+  Layer  5: pooled=0.5320, best_cssi=cssi_mean=0.5511 (37s)
+    Cell 100/497
+    Cell 200/497
+    Cell 300/497
+    Cell 400/497
+  Layer  6: pooled=0.5131, best_cssi=cssi_mean=0.5384 (39s)
+    Cell 100/497
+    Cell 200/497
+    Cell 300/497
+    Cell 400/497
+  Layer  7: pooled=0.5971, best_cssi=cssi_deviation=0.6076 (34s)
+    Cell 100/497
+    Cell 200/497
+    Cell 300/497
+    Cell 400/497
+  Layer  8: pooled=0.5294, best_cssi=cssi_range=0.5897 (39s)
+    Cell 100/497
+    Cell 200/497
+    Cell 300/497
+    Cell 400/497
+  Layer  9: pooled=0.5944, best_cssi=cssi_range=0.6106 (35s)
+    Cell 100/497
+    Cell 200/497
+    Cell 300/497
+    Cell 400/497
+  Layer 10: pooled=0.6152, best_cssi=cssi_range=0.6477 (34s)
+    Cell 100/497
+    Cell 200/497
+    Cell 300/497
+    Cell 400/497
+  Layer 11: pooled=0.5679, best_cssi=cssi_range=0.5887 (34s)
+    Cell 100/497
+    Cell 200/497
+    Cell 300/497
+    Cell 400/497
+  Layer 12: pooled=0.6556, best_cssi=cssi_range=0.6662 (33s)
+    Cell 100/497
+    Cell 200/497
+    Cell 300/497
+    Cell 400/497
+  Layer 13: pooled=0.6940, best_cssi=cssi_deviation=0.6937 (43s)
+    Cell 100/497
+    Cell 200/497
+    Cell 300/497
+    Cell 400/497
+  Layer 14: pooled=0.6829, best_cssi=cssi_deviation=0.6824 (51s)
+    Cell 100/497
+    Cell 200/497
+    Cell 300/497
+    Cell 400/497

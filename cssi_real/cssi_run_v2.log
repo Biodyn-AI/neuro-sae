@@ -1,0 +1,25 @@
+Starting CSSI v2...
+Vocab: 20275
+Device: cuda
+Loading model...
+Model: 18L x 18H
+Loading data...
+Loading TRRUST...
+TRRUST: 8330 mapped edges
+TRRUST TFs with Ensembl: 778
+  TF BRPF1 (ENSG00000156983): in_vocab=True
+  TF JDP2 (ENSG00000140044): in_vocab=True
+  TF TRIM22 (ENSG00000132274): in_vocab=True
+  TF PHF8 (ENSG00000172943): in_vocab=True
+  TF TP53 (ENSG00000141510): in_vocab=True
+
+============================================================
+n_cells = 200
+Sampled: 197, dist: {'oligodendrocyte': np.int64(97), 'glutamatergic neuron': np.int64(42), 'astrocyte': np.int64(14), 'pvalb GABAergic cortical interneuron': np.int64(14), 'GABAergic interneuron': np.int64(14), 'oligodendrocyte precursor cell': np.int64(10), 'microglial cell': np.int64(6)}
+Tokenizing...
+Valid: 197, median len: 2048
+Genes in attention: 7150, TRRUST genes: 2815, overlap: 843
+Extracting attention...
+  Attention: 100/197
+Done in 9.2s
+Computing POOLED scores...

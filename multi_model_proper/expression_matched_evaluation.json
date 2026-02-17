@@ -1,0 +1,29 @@
+{
+  "experiment": "expression_matched_negative_evaluation",
+  "description": "AUROC computed against negatives matched on marginal attention (\u00b120%), controlling for expression-driven confounds",
+  "n_positive_edges": 27,
+  "n_negative_edges": 1350,
+  "n_total": 1377,
+  "negatives_per_positive": 50,
+  "matching_tolerance": 0.2,
+  "matching_statistic": "attention_marginals (row/col means, proxy for expression)",
+  "auroc_attention_mean_all_heads": 0.6226,
+  "auroc_marginal_product_baseline": 0.5044,
+  "auroc_variance_product_baseline": 0.481,
+  "auroc_best_single_head": 0.6454,
+  "best_head": "L0_H6",
+  "auroc_median_head": 0.6191,
+  "top10_heads": {
+    "L0_H6": 0.6454,
+    "L1_H1": 0.639,
+    "L5_H5": 0.6352,
+    "L4_H3": 0.6341,
+    "L10_H4": 0.6336,
+    "L8_H7": 0.6335,
+    "L2_H6": 0.6334,
+    "L0_H7": 0.6327,
+    "L0_H5": 0.6324,
+    "L4_H7": 0.6317
+  },
+  "interpretation": "Marginal-product baseline is ~0.50 by construction (matched negatives). If attention AUROC > 0.50, this indicates genuine pairwise structure beyond marginal biases."
+}

@@ -1,0 +1,20 @@
+{
+  "n_cells": 497,
+  "n_genes": 1000,
+  "n_cell_types": 7,
+  "cell_types": {
+    "GABAergic interneuron": 39,
+    "astrocyte": 35,
+    "glutamatergic neuron": 112,
+    "microglial cell": 11,
+    "oligodendrocyte": 233,
+    "oligodendrocyte precursor cell": 27,
+    "pvalb GABAergic cortical interneuron": 37
+  },
+  "n_trrust_edges_evaluated": 35,
+  "n_total_pairs": 12987,
+  "auroc_pooled_spearman": 0.5816,
+  "auroc_stratified_max": 0.5947,
+  "auroc_stratified_mean": 0.6037,
+  "auroc_L13_L14_attention": 0.694
+}

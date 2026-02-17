@@ -1,0 +1,36 @@
+{
+  "experiment": "expression_matched_negative_evaluation_v2",
+  "description": "AUROC with negatives matched on ACTUAL expression statistics (mean expression \u00b120%, detection rate \u00b120%) from source h5ad, not attention marginals",
+  "source_h5ad": "immune_shared_hvg1200_processed.h5ad",
+  "matching_variables": [
+    "mean_expression",
+    "detection_rate"
+  ],
+  "matching_tolerance": 0.2,
+  "n_positive_edges": 27,
+  "n_negative_edges": 1304,
+  "n_total": 1331,
+  "negatives_per_positive": 50,
+  "auroc_attention_mean_all_heads": 0.6456,
+  "auroc_attention_95ci": [
+    0.5391,
+    0.7468
+  ],
+  "auroc_marginal_product_baseline": 0.5735,
+  "auroc_expression_product_baseline": 0.5216,
+  "auroc_best_single_head": 0.6622,
+  "best_head": "L0_H6",
+  "best_head_95ci": [
+    0.5606,
+    0.7654
+  ],
+  "auroc_median_head": 0.6417,
+  "top5_heads": {
+    "L0_H6": 0.6622,
+    "L8_H7": 0.657,
+    "L4_H3": 0.6559,
+    "L5_H5": 0.6536,
+    "L3_H6": 0.6529
+  },
+  "n_bootstrap": 1000
+}

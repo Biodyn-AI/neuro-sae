@@ -1,0 +1,113 @@
+{
+  "synthetic_splithalf": [
+    {
+      "config": "Small",
+      "n_cells": 200,
+      "n_states": 2,
+      "pooled_full": "0.667 +/- 0.000",
+      "cssi_full": "0.667 +/- 0.000",
+      "ratio_full": "1.00x",
+      "pooled_heldout": "0.640 +/- 0.033",
+      "cssi_heldout": "0.667 +/- 0.000",
+      "ratio_heldout": "1.04x",
+      "pooled_heldout_mean": 0.64,
+      "cssi_heldout_mean": 0.6666666666666667,
+      "pooled_full_mean": 0.6666666666666667,
+      "cssi_full_mean": 0.6666666666666667
+    },
+    {
+      "config": "Medium",
+      "n_cells": 400,
+      "n_states": 4,
+      "pooled_full": "0.633 +/- 0.037",
+      "cssi_full": "0.667 +/- 0.000",
+      "ratio_full": "1.05x",
+      "pooled_heldout": "0.460 +/- 0.053",
+      "cssi_heldout": "0.667 +/- 0.000",
+      "ratio_heldout": "1.45x",
+      "pooled_heldout_mean": 0.45999999999999996,
+      "cssi_heldout_mean": 0.6666666666666667,
+      "pooled_full_mean": 0.6333333333333333,
+      "cssi_full_mean": 0.6666666666666667
+    },
+    {
+      "config": "Large",
+      "n_cells": 600,
+      "n_states": 6,
+      "pooled_full": "0.557 +/- 0.047",
+      "cssi_full": "0.667 +/- 0.000",
+      "ratio_full": "1.20x",
+      "pooled_heldout": "0.303 +/- 0.057",
+      "cssi_heldout": "0.663 +/- 0.010",
+      "ratio_heldout": "2.19x",
+      "pooled_heldout_mean": 0.30333333333333334,
+      "cssi_heldout_mean": 0.6633333333333333,
+      "pooled_full_mean": 0.5566666666666666,
+      "cssi_full_mean": 0.6666666666666667
+    },
+    {
+      "config": "XLarge",
+      "n_cells": 1000,
+      "n_states": 8,
+      "pooled_full": "0.527 +/- 0.053",
+      "cssi_full": "0.667 +/- 0.000",
+      "ratio_full": "1.27x",
+      "pooled_heldout": "0.320 +/- 0.037",
+      "cssi_heldout": "0.667 +/- 0.000",
+      "ratio_heldout": "2.08x",
+      "pooled_heldout_mean": 0.31999999999999995,
+      "cssi_heldout_mean": 0.6666666666666667,
+      "pooled_full_mean": 0.5266666666666667,
+      "cssi_full_mean": 0.6666666666666667
+    },
+    {
+      "config": "XXLarge",
+      "n_cells": 1000,
+      "n_states": 10,
+      "pooled_full": "0.370 +/- 0.041",
+      "cssi_full": "0.667 +/- 0.000",
+      "ratio_full": "1.80x",
+      "pooled_heldout": "0.203 +/- 0.053",
+      "cssi_heldout": "0.650 +/- 0.027",
+      "ratio_heldout": "3.20x",
+      "pooled_heldout_mean": 0.2033333333333333,
+      "cssi_heldout_mean": 0.65,
+      "pooled_full_mean": 0.37,
+      "cssi_full_mean": 0.6666666666666667
+    },
+    {
+      "config": "Massive",
+      "n_cells": 1500,
+      "n_states": 12,
+      "pooled_full": "0.427 +/- 0.076",
+      "cssi_full": "0.667 +/- 0.000",
+      "ratio_full": "1.56x",
+      "pooled_heldout": "0.227 +/- 0.047",
+      "cssi_heldout": "0.667 +/- 0.000",
+      "ratio_heldout": "2.94x",
+      "pooled_heldout_mean": 0.22666666666666666,
+      "cssi_heldout_mean": 0.6666666666666667,
+      "pooled_full_mean": 0.42666666666666664,
+      "cssi_full_mean": 0.6666666666666667
+    }
+  ],
+  "real_scgpt_crossvalidation": {
+    "description": "scGPT 497 brain cells split 248/249, 12 layers",
+    "best_layers_halfA": [
+      0,
+      4,
+      10
+    ],
+    "best_layers_halfB": [
+      0,
+      10,
+      11
+    ],
+    "layer_overlap": "2/3 (67%)",
+    "mean_auroc_A_layers_on_B": 0.619,
+    "random_3layer_baseline_B": 0.539,
+    "improvement_over_random": "0.080 (2.0 sigma, p ~ 0.02)",
+    "conclusion": "Layer selection transfers across held-out splits with significant improvement over random selection."
+  },
+  "methodology": "Split 50/50. Select CSSI variant (max vs mean) on train. Evaluate on test. 10 seeds per config."
+}

@@ -1,0 +1,22 @@
+2026-02-15 15:42:52,867 - INFO - Starting Geneformer GRN validation
+2026-02-15 15:42:52,944 - INFO - Data: D:/openclaw/intelligence-augmentation/data/brain_scrna/DLPFC_11k.h5ad
+2026-02-15 15:42:52,993 - INFO - Model: D:/openclaw/intelligence-augmentation/models/Geneformer/Geneformer-V1-10M
+2026-02-15 15:42:53,042 - INFO - Output: D:/openclaw/biodyn-nmi-paper/multi_model_proper
+2026-02-15 15:42:53,092 - INFO - Cell counts: [200, 500, 1000]
+2026-02-15 15:42:53,141 - INFO - Using device: cpu
+2026-02-15 15:42:53,190 - INFO - Starting GRN validation pipeline
+2026-02-15 15:42:53,192 - INFO - Loading data from D:\openclaw\intelligence-augmentation\data\brain_scrna\DLPFC_11k.h5ad
+2026-02-15 15:43:01,198 - INFO - Loaded 11202 cells, 32344 genes
+2026-02-15 15:43:15,884 - INFO - After filtering: 11202 cells, 24919 genes
+2026-02-15 15:43:15,886 - INFO - Loading Geneformer model from D:\openclaw\intelligence-augmentation\models\Geneformer\Geneformer-V1-10M
+2026-02-15 15:43:16,005 - INFO - Loaded gene dictionary with 63675 genes
+2026-02-15 15:43:16,006 - INFO - Using manual tokenization (no Geneformer tokenizer)
+Some weights of BertModel were not initialized from the model checkpoint at D:\openclaw\intelligence-augmentation\models\Geneformer\Geneformer-V1-10M and are newly initialized: ['pooler.dense.bias', 'pooler.dense.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+2026-02-15 15:43:16,253 - INFO - Successfully loaded Geneformer model
+2026-02-15 15:43:16,254 - INFO - Downloading TRRUST reference data
+2026-02-15 15:43:22,617 - INFO - Downloaded 9396 TRRUST interactions
+2026-02-15 15:43:22,620 - INFO - Processing 200 cells
+2026-02-15 15:43:22,621 - INFO - Tokenizing 200 cells
+2026-02-15 15:43:25,821 - INFO - Tokenized 200 cells to tensor shape: torch.Size([200, 2048])
+2026-02-15 15:43:25,952 - INFO - Extracting attention weights

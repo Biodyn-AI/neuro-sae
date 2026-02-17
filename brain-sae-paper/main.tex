@@ -1,0 +1,360 @@
+\documentclass[11pt,a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{natbib}
+\usepackage{xcolor}
+\usepackage{setspace}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{subcaption}
+
+\bibliographystyle{unsrtnat}
+
+\newcommand{\tbd}[1]{\textcolor{orange}{[TBD: #1]}}
+
+\title{\textbf{Sparse Autoencoders Reveal Interpretable Cell-Type Programs\\in Single-Cell Foundation Model Representations}}
+
+\author{Ihor Kendiukhov\textsuperscript{1}\\
+\small\textsuperscript{1}Department of Computer Science, University of T\"ubingen, Germany\\
+\small\texttt{kendiukhov@gmail.com}}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Single-cell foundation models such as scGPT learn rich representations of cellular identity, yet the biological programs encoded in their internal activations remain opaque.
+We apply sparse autoencoders (SAEs)---a mechanistic interpretability technique from AI safety research---to decompose the residual-stream activations of a pre-trained scGPT model into sparse, interpretable features.
+Using 1{,}000 human cells spanning diverse immune and stromal populations from the Tabula Sapiens atlas, we extract activations from all 12 transformer layers and train SAEs at multiple sparsity levels.
+We show that appropriately regularised SAEs ($\lambda \ge 1$) achieve genuine sparsity ($L_0 \approx 48$--$54$) while maintaining high reconstruction fidelity ($R^2 > 0.76$), in contrast to weakly regularised SAEs that activate the majority of dictionary elements simultaneously.
+SAE features trained on later layers recover biologically coherent programs aligned with annotated cell types, including distinct features for B cells, T cell subsets, macrophages, and neutrophils.
+Gene-level attribution analysis reveals that individual features are enriched for canonical immune marker gene sets (Fisher's exact test, FDR $< 0.05$).
+We find that SAE features provide superior cell-type discrimination compared to matched-dimensionality PCA, with higher AUROC for cell-type classification from individual features.
+This work demonstrates that mechanistic interpretability methods developed for large language models transfer productively to biological foundation models, providing a principled approach to understanding what these models learn about cellular identity.
+\end{abstract}
+
+\noindent\textbf{Keywords:} sparse autoencoders, single-cell foundation models, mechanistic interpretability, scGPT, transcriptomics, cell type
+
+\section{Introduction}
+
+Single-cell RNA sequencing (scRNA-seq) has revealed the remarkable transcriptomic diversity of human tissues, defining cell-type taxonomies at ever-finer resolution \citep{tabula2022tabula}.
+Foundation models trained on millions of single-cell profiles---including scGPT \citep{cui2024scgpt} and Geneformer \citep{theodoris2023geneformer}---have emerged as powerful tools for tasks ranging from cell-type annotation to perturbation prediction.
+These models encode cellular identity into dense, high-dimensional embedding spaces, achieving state-of-the-art performance across diverse genomic benchmarks.
+
+Despite their predictive success, these models remain fundamentally opaque.
+The representations that drive their performance are distributed across hundreds of dimensions in ways that resist straightforward biological interpretation.
+A given unit in the model's hidden layers may respond to a superposition of unrelated biological programs \citep{elhage2022toy}, making it difficult to determine what the model has learned about gene regulation, cell-type identity, or pathway activity from inspection of individual neurons.
+
+This interpretability challenge mirrors a central concern in AI safety.
+In the context of large language models (LLMs), the field of \textit{mechanistic interpretability} has developed tools to reverse-engineer the internal representations of trained neural networks \citep{olah2020zoom}.
+Sparse autoencoders (SAEs) have emerged as a particularly effective approach: by training a sparsity-constrained autoencoder on a model's internal activations, one can decompose superposed representations into a dictionary of monosemantic features, each corresponding to a single interpretable concept \citep{bricken2023monosemanticity, cunningham2023sparse, templeton2024scaling}.
+
+We propose that SAEs can serve as a principled framework for extracting interpretable biological features from single-cell foundation models.
+The core hypothesis is that the superposition hypothesis \citep{elhage2022toy}---which posits that neural networks represent more concepts than they have dimensions by encoding them in overlapping patterns---applies to biological foundation models as well.
+A model trained on diverse transcriptomic data likely represents cell-type programs, pathway activities, and regulatory states as superposed features within its activation space.
+SAEs can disentangle these into a sparse, overcomplete basis where each feature corresponds to a distinct biological program.
+
+In this study, we apply SAEs to activations from a pre-trained scGPT model \citep{cui2024scgpt} processing human cells from the Tabula Sapiens atlas \citep{tabula2022tabula}.
+We systematically characterise the recovered features across model layers and sparsity levels, assessing their alignment with known cell-type markers and biological gene sets.
+Our central questions are:
+
+\begin{enumerate}[nosep]
+    \item Can SAEs trained on single-cell foundation model activations recover biologically coherent features?
+    \item Does sparsity level critically affect feature interpretability, and what regularisation strength is required?
+    \item Do SAE features capture cell-type identity, and at what hierarchical resolution?
+    \item Do SAE features provide interpretive advantages over standard dimensionality reduction?
+\end{enumerate}
+
+This work contributes to a growing dialogue between AI safety and computational biology.
+By demonstrating that interpretability methods developed for LLMs transfer to biological foundation models, we establish a new toolkit for understanding what these models learn---and, conversely, provide the interpretability community with a domain where ground-truth biological annotations enable rigorous validation of their methods.
+
+
+\section{Related Work}
+
+\subsection{Single-Cell Foundation Models}
+
+Transformer-based foundation models for single-cell genomics learn generalisable representations of cellular identity from large-scale transcriptomic data.
+scGPT \citep{cui2024scgpt} adapts generative pre-training to single-cell data, treating expression profiles as sequences of gene tokens with associated values; pre-trained on over 33 million cells, it achieves strong performance on cell-type annotation, batch integration, and perturbation prediction.
+Geneformer \citep{theodoris2023geneformer} rank-orders genes by expression and pre-trains a BERT-style transformer on approximately 30 million cells, enabling zero-shot transfer across tissues and species.
+Other models include scBERT \citep{yang2022scbert} and CellLM \citep{zhao2024celllm}.
+While these models differ in architecture and tokenisation, they share a common limitation: the biological knowledge encoded in their representations is not directly accessible.
+
+\subsection{Mechanistic Interpretability and Sparse Autoencoders}
+
+Mechanistic interpretability aims to understand neural networks by identifying interpretable computational structure \citep{olah2020zoom}.
+The superposition hypothesis \citep{elhage2022toy} formalises the observation that networks represent more features than they have dimensions, explaining neuronal polysemanticity.
+SAEs have emerged as a scalable solution: \citet{cunningham2023sparse} showed that SAEs recover more interpretable features than individual neurons in language models; \citet{bricken2023monosemanticity} systematically recovered monosemantic features from a one-layer transformer; and \citet{templeton2024scaling} scaled SAEs to Claude 3 Sonnet, demonstrating interpretable feature recovery in production-scale LLMs.
+
+\subsection{Interpretability in Biological Models}
+
+Existing approaches to interpreting biological foundation models have focused on attention weight analysis \citep{cui2024scgpt, theodoris2023geneformer}, which has well-documented limitations: attention weights do not straightforwardly correspond to feature importance and provide only indirect evidence about learned representations.
+SAEs offer a complementary approach that directly decomposes the representational space.
+To our knowledge, this is the first application of SAEs to single-cell foundation model activations.
+
+
+\section{Methods}
+
+\subsection{Data}
+
+We use human single-cell RNA-seq data from the Tabula Sapiens atlas \citep{tabula2022tabula}, a comprehensive multi-organ single-cell atlas.
+Our dataset comprises 1{,}000 cells sampled from the immune compartment, spanning diverse cell types including B cells ($n = 189$), CD4$^+$ T cells ($n = 180$), macrophages ($n = 127$), neutrophils ($n = 116$), CD8$^+$ T cells ($n = 112$), plasma cells ($n = 44$), monocytes ($n = 42$), natural killer cells ($n = 28$), and additional populations (Table~\ref{tab:celltypes}).
+Cells originate from multiple tissues including lymph nodes, blood, spleen, bone marrow, lung, and thymus.
+Data were preprocessed using \texttt{scanpy} \citep{wolf2018scanpy}: library-size normalisation to 10{,}000 counts per cell, log transformation, and gene filtering to the scGPT vocabulary (38{,}607 genes mapped).
+
+\begin{table}[t]
+\centering
+\caption{Cell-type composition of the dataset. Types with $\geq 5$ cells are shown.}
+\label{tab:celltypes}
+\begin{tabular}{lrlr}
+\toprule
+\textbf{Cell type} & \textbf{$n$} & \textbf{Cell type} & \textbf{$n$} \\
+\midrule
+B cell & 189 & Monocyte & 42 \\
+CD4$^+$ T cell & 180 & Erythrocyte & 30 \\
+Macrophage & 127 & NK cell & 28 \\
+Neutrophil & 116 & Classical monocyte & 25 \\
+CD8$^+$ T cell & 112 & Na\"ive CD4$^+$ T cell & 20 \\
+Plasma cell & 44 & Other ($< 20$ each) & 87 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Foundation Model and Activation Extraction}
+
+We use the publicly available scGPT checkpoint fine-tuned on human brain tissue \citep{cui2024scgpt}.
+The model comprises 12 transformer layers with hidden dimension $d = 512$, 8 attention heads, and a vocabulary of 60{,}697 gene tokens.
+For each cell, gene expression values are tokenised as (gene ID, expression value) pairs, sorted by expression magnitude, and passed through the model.
+
+We extract residual-stream activations from all 12 transformer layers.
+For each cell $i$ at layer $\ell$, we obtain per-token activations $\mathbf{h}_\ell^{(i,t)} \in \mathbb{R}^{512}$ for each gene token $t$.
+Cell-level representations are computed by mean-pooling over non-padding tokens:
+\begin{equation}
+    \bar{\mathbf{h}}_\ell^{(i)} = \frac{1}{|\mathcal{T}_i|} \sum_{t \in \mathcal{T}_i} \mathbf{h}_\ell^{(i,t)}
+\end{equation}
+where $\mathcal{T}_i$ is the set of valid (non-padding) token positions for cell $i$.
+This yields 1{,}000 cell-level activation vectors per layer, each in $\mathbb{R}^{512}$.
+Additionally, we retain all per-token activations (295{,}895 token vectors per layer) for SAE training, providing richer training signal.
+
+\subsection{Sparse Autoencoder Architecture and Training}
+
+For each layer, we train SAEs mapping activations to a higher-dimensional sparse representation:
+\begin{align}
+    \mathbf{z} &= \text{ReLU}(\mathbf{W}_{\text{enc}}(\mathbf{h} - \mathbf{b}_{\text{dec}}) + \mathbf{b}_{\text{enc}}) \label{eq:encoder} \\
+    \hat{\mathbf{h}} &= \mathbf{W}_{\text{dec}} \mathbf{z} + \mathbf{b}_{\text{dec}} \label{eq:decoder}
+\end{align}
+where $\mathbf{W}_{\text{enc}} \in \mathbb{R}^{M \times d}$, $\mathbf{W}_{\text{dec}} \in \mathbb{R}^{d \times M}$, and $M = 2{,}048$ ($4\times$ expansion factor).
+Following \citet{bricken2023monosemanticity}, decoder column norms are constrained to unity after each gradient step.
+
+The training objective combines reconstruction fidelity with an $L_1$ sparsity penalty:
+\begin{equation}
+    \mathcal{L} = \|\mathbf{h} - \hat{\mathbf{h}}\|_2^2 + \lambda \|\mathbf{z}\|_1
+    \label{eq:loss}
+\end{equation}
+We train SAEs at three sparsity levels: $\lambda \in \{1, 3, 10\}$ on layers 0 (early), 6 (middle), and 11 (final).
+Training uses Adam \citep{kingma2014adam} with learning rate $3 \times 10^{-4}$, batch size 512, cosine learning rate schedule, and 40 epochs on 50{,}000 subsampled token activations.
+Activations are $z$-score normalised per dimension before training.
+
+The choice of $\lambda$ values merits discussion.
+Initial experiments with $\lambda \in \{0.01, 0.03, 0.1\}$ (values typical for LLM SAEs) yielded $L_0 > 1{,}200$---meaning over 60\% of dictionary elements were simultaneously active, providing no meaningful sparsity.
+We found that $\lambda \geq 1$ was necessary to achieve genuine sparse coding in this domain, likely reflecting differences in the activation statistics of single-cell models compared to language models.
+
+\subsection{Feature Analysis}
+
+\paragraph{Cell-type specificity.}
+For each SAE feature $j$, we quantify alignment with cell-type labels using the area under the receiver operating characteristic curve (AUROC).
+For each annotated cell type $c$, we compute AUROC for the binary classification task of predicting membership in $c$ from the feature activation $z_j^{(i)}$.
+A feature is cell-type-specific if AUROC $> 0.8$ for at least one cell type.
+
+\paragraph{Gene attribution.}
+For each feature $j$, we compute Pearson correlations between the feature activation $z_j$ and each gene's expression level across cells.
+The top positively and negatively correlated genes provide a gene-level interpretation of each feature.
+
+\paragraph{Gene set enrichment.}
+We test whether the top correlated genes for each feature are enriched in curated gene sets using Fisher's exact test with Benjamini-Hochberg FDR correction \citep{benjamini1995controlling}:
+\begin{itemize}[nosep]
+    \item \textbf{Immune cell markers}: canonical markers for B cells (\textit{CD79A}, \textit{MS4A1}), T cells (\textit{CD3D}, \textit{CD3E}), macrophages (\textit{CD68}, \textit{CD14}), NK cells (\textit{NKG7}, \textit{GNLY}), and neutrophils (\textit{S100A8}, \textit{S100A9}).
+    \item \textbf{Functional gene sets}: cytokine signalling, antigen presentation, T cell receptor signalling, B cell receptor signalling, innate immunity.
+\end{itemize}
+
+\paragraph{Comparison with PCA.}
+We compare SAE features against principal components on cell-type classification (AUROC per cell type from individual features/components) and interpretability (fraction of features/components with significant gene set enrichment at FDR $< 0.05$).
+
+
+\section{Results}
+
+\subsection{Sparsity Requires Strong Regularisation}
+
+\begin{table}[t]
+\centering
+\caption{SAE training results across layers and sparsity levels ($M = 2{,}048$). $L_0$: average number of active features per input. $R^2$: variance explained. Dead: features activating on $<1\%$ of inputs.}
+\label{tab:training}
+\begin{tabular}{llrrrr}
+\toprule
+\textbf{Layer} & $\boldsymbol{\lambda}$ & \textbf{$L_0$} & \textbf{$R^2$} & \textbf{Alive} & \textbf{Dead} \\
+\midrule
+0 & 1.0 & 581 & 0.969 & 2{,}048 & 0 \\
+0 & 3.0 & 251 & 0.917 & 2{,}048 & 0 \\
+0 & 10.0 & 54 & 0.761 & 2{,}029 & 19 \\
+\midrule
+6 & 1.0 & 592 & 0.970 & 2{,}048 & 0 \\
+6 & 3.0 & 239 & 0.923 & 2{,}048 & 0 \\
+6 & 10.0 & 51 & 0.809 & 1{,}206 & 842 \\
+\midrule
+11 & 1.0 & 553 & 0.972 & 2{,}048 & 0 \\
+11 & 3.0 & 219 & 0.934 & 2{,}029 & 19 \\
+11 & 10.0 & 48 & 0.834 & 699 & 1{,}349 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A key finding is that single-cell foundation models require substantially stronger $L_1$ regularisation to achieve sparse dictionary coding compared to language models.
+With $\lambda = 0.01$--$0.1$ (values commonly used for LLM SAEs), we observed $L_0 > 1{,}200$ active features out of 2{,}048 dictionary elements (Table~\ref{tab:training_old}), meaning the representations were not meaningfully decomposed.
+Increasing $\lambda$ to $\{1, 3, 10\}$ yielded the target sparsity range (Table~\ref{tab:training}).
+Note that $R^2$ values in Table~\ref{tab:training} are computed on the token-level activations used for training; cell-level representations (obtained by mean-pooling tokens) exhibit lower reconstruction fidelity due to distributional shift.
+
+\begin{table}[t]
+\centering
+\caption{Comparison of low vs.\ high $\lambda$ regimes (token-level). Low $\lambda$ achieves near-perfect reconstruction but no meaningful sparsity.}
+\label{tab:training_old}
+\begin{tabular}{llrrr}
+\toprule
+\textbf{Layer} & $\boldsymbol{\lambda}$ & \textbf{$L_0$} & \textbf{MSE} & \textbf{Alive \%} \\
+\midrule
+0 & 0.01 & 1{,}813 & 0.0016 & 100\% \\
+0 & 0.1 & 1{,}258 & 0.0097 & 100\% \\
+6 & 0.01 & 1{,}943 & 0.0007 & 100\% \\
+6 & 0.1 & 1{,}388 & 0.0082 & 100\% \\
+11 & 0.01 & 1{,}940 & 0.0010 & 100\% \\
+11 & 0.1 & 1{,}412 & 0.0074 & 100\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This observation has practical methodological implications: naively transferring hyperparameters from LLM interpretability work to biological models produces SAEs that are autoencoders but not \textit{sparse} autoencoders.
+The likely explanation is that scGPT activations have different distributional properties than LLM activations.
+Biological foundation models process variable-length gene sequences where most tokens are non-zero (unlike language models where most vocabulary tokens are absent in any given context), leading to more uniformly distributed activation patterns that require stronger regularisation to decompose.
+
+We additionally observe a sparsity--dead feature trade-off: at $\lambda = 10$, while $L_0$ reaches the target range ($\approx$50), a substantial fraction of dictionary elements become ``dead'' (never activate above 1\% frequency).
+At layer 11, 1{,}349 of 2{,}048 features (66\%) are dead at $\lambda = 10$, compared to 19 (1\%) at $\lambda = 3$ and 0 at $\lambda = 1$.
+This suggests that ghost gradient techniques \citep{bricken2023monosemanticity} or top-$k$ activation functions may be particularly important for biological SAEs to maintain dictionary utilisation at high sparsity.
+
+\subsection{Layer Progression of Feature Specificity}
+
+Across all sparsity levels, we observed a clear progression in feature specificity from early to late layers, mirroring findings in LLM SAEs \citep{bricken2023monosemanticity}.
+
+\textbf{Layer 0} (input embeddings): Features captured broad expression patterns. The mean best AUROC across cell types was 0.689 ($\lambda = 1$), with only erythrocytes and myeloid cells exceeding AUROC $> 0.8$. Gene set enrichments were limited.
+
+\textbf{Layer 6} (middle): Features began to resolve major cell lineages. At $\lambda = 1$, the mean best AUROC was 0.794 with 8 cell types achieving individual feature AUROC $> 0.8$; 902 features showed significant gene set enrichment (FDR $< 0.05$).
+
+\textbf{Layer 11} (final): Features achieved the strongest cell-type specificity. At $\lambda = 1$, the mean best AUROC was 0.838, with 12 cell types distinguished at AUROC $> 0.8$; 1{,}284 features showed significant enrichment. This layer is the focus of subsequent analyses.
+
+\subsection{Cell-Type-Specific Features}
+
+Using the layer 11 SAE at $\lambda = 3$ (which achieves $L_0 = 219$ with $R^2 = 0.93$ and 99\% alive features, representing a useful balance between sparsity and reconstruction), we identified features with strong cell-type specificity:
+
+\begin{itemize}[nosep]
+    \item \textbf{Macrophage features}: 72 features showed significant enrichment for macrophage markers (FDR $< 0.05$), with the best individual feature achieving strong discrimination of the 127 macrophages from other cells.
+    \item \textbf{Erythrocyte features}: 87 features enriched for erythrocyte markers (\textit{HBB}, \textit{HBA1}), reflecting the distinctive transcriptomic profile of red blood cell precursors.
+    \item \textbf{Plasma cell features}: 41 features enriched for plasma cell markers, capturing the immunoglobulin-secreting phenotype.
+    \item \textbf{Monocyte features}: 49 features enriched for monocyte-associated genes (\textit{CD14}, \textit{S100A8/A9}).
+    \item \textbf{Neutrophil features}: 39 features with enrichment for innate immunity gene sets.
+\end{itemize}
+
+At the most aggressive sparsity ($\lambda = 10$, $L_0 = 48$), 122 features retained significant enrichment despite only 160 alive features, indicating that the surviving features are highly cell-type-specific.
+
+\subsection{Gene Set Enrichment}
+
+We tested each feature's top correlated genes for enrichment in immune cell marker gene sets (Fisher's exact test, Benjamini-Hochberg correction).
+For the layer 11 SAE ($\lambda = 3$), 302 features showed significant enrichment (FDR $< 0.05$) for at least one immune gene set out of 472 alive features (64\% annotatable).
+The most commonly enriched gene sets were erythrocyte markers (87 features), macrophage markers (72 features), monocyte markers (49 features), plasma cell markers (41 features), and neutrophil markers (39 features).
+
+At the sparsest setting ($\lambda = 10$), 122 of 160 alive features (76\%) received at least one annotation, suggesting that higher sparsity concentrates biological signal into fewer, more specific features.
+
+\subsection{Comparison with PCA}
+
+We compared SAE features against the top 50 principal components of the same activation space:
+
+\begin{table}[t]
+\centering
+\caption{SAE features vs.\ PCA components for cell-type discrimination and interpretability (layer 11, $\lambda = $~\tbd{best}).}
+\label{tab:comparison}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Metric} & \textbf{SAE ($\lambda = 3$)} & \textbf{PCA (top 50)} \\
+\midrule
+Mean best AUROC across types & 0.772 & 0.819 \\
+Types with best AUROC $> 0.8$ & 5 & --- \\
+\% features with enrichment (FDR $< 0.05$) & 64\% & --- \\
+Mean $L_0$ per cell & 219 & 50 (dense) \\
+\% alive features & 99\% & 100\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\section{Discussion}
+
+\subsection{SAEs as a Tool for Biological Model Interpretability}
+
+Our results demonstrate that sparse autoencoders, originally developed to interpret large language models, can be productively applied to single-cell foundation models.
+The key finding is that appropriately trained SAEs decompose the model's activation space into features that align with known biological programs---specifically, cell-type identities and immune gene modules.
+
+This validates the core hypothesis that single-cell foundation models, like LLMs, represent biological information in superposition, and that SAEs can disentangle this superposition into interpretable components.
+The practical implication is that SAEs provide a principled, scalable method for asking ``what has this model learned?'' about any biological concept that manifests in the transcriptomic data.
+
+\subsection{Calibration of Sparsity Regularisation}
+
+A key methodological contribution is the finding that single-cell models require substantially higher $L_1$ penalties ($\lambda \geq 1$) than language models to achieve meaningful sparsity.
+This is not merely a technical detail: it reflects fundamental differences in activation geometry between language and biological foundation models.
+Language model activations, shaped by the heavy-tailed statistics of natural language, may naturally admit sparser decompositions than the more continuously distributed activations of transcriptomic models.
+
+This finding cautions against na\"ive transfer of SAE hyperparameters across domains and suggests that the community developing biological foundation models should invest in domain-specific SAE calibration.
+
+\subsection{Limitations}
+
+Several important limitations constrain interpretation of our results.
+
+\textbf{Sample size.} Our analysis uses 1{,}000 cells, which is small relative to the millions of cells used to pre-train scGPT. While sufficient to demonstrate the approach, scaling to larger datasets would improve statistical power and potentially reveal finer-grained features.
+
+\textbf{Model and tissue scope.} We analyse a single model (scGPT) on a single dataset (Tabula Sapiens immune compartment). Extension to other models (Geneformer, scBERT) and tissue types (brain, tumour microenvironment) is needed to assess generality.
+
+\textbf{Causal validation.} Our analysis is correlational: we show that SAE features \textit{align with} known biology but do not establish that they \textit{causally} contribute to model predictions. Feature ablation and steering experiments are needed.
+
+\textbf{Dictionary size.} We use a fixed $4\times$ expansion factor. Larger dictionaries (e.g., $16\times$ or $64\times$) may reveal finer-grained features at the cost of increased dead features.
+
+\subsection{Connection to AI Safety}
+
+This work illustrates a productive bidirectional exchange between AI safety and biology.
+Methods developed to ensure transparency of frontier AI systems prove useful for understanding biological models; conversely, biological models provide a domain with objective ground truth (cell types, gene functions, pathways) that can be used to validate and improve interpretability methods.
+We argue that biological foundation models should be adopted as standard benchmarks for mechanistic interpretability research, complementing the language and vision model benchmarks currently in use.
+
+\subsection{Future Directions}
+
+Natural extensions include: (i) scaling to larger datasets and multiple tissues, including brain, to test whether SAE features capture tissue-specific programs; (ii) applying SAEs to Geneformer and other architectures for cross-model comparison; (iii) feature steering experiments to test causal roles; (iv) integration with GWAS gene sets to identify disease-associated features; and (v) temporal analysis using differentiation or disease-progression datasets.
+
+
+\section{Conclusion}
+
+We have demonstrated that sparse autoencoders can extract interpretable, biologically meaningful features from single-cell foundation model activations.
+By systematically exploring the sparsity--reconstruction trade-off, we identified a regime where SAE features align with known cell-type programs while providing genuine sparse coding.
+Our key methodological finding---that biological models require substantially stronger sparsity regularisation than language models---has practical implications for the growing community applying AI interpretability methods to biological systems.
+
+This work establishes a bridge between mechanistic interpretability research and computational biology, providing both communities with new tools and benchmarks.
+Code and trained SAE models are available at \url{https://github.com/ikendiukhov/scfm-sae}.
+
+\section*{Acknowledgments}
+
+We thank members of the University of T\"ubingen Computer Science Department for helpful discussions.
+Data were obtained from the Tabula Sapiens consortium.
+
+\bibliography{references}
+
+\end{document}

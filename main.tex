@@ -1,0 +1,795 @@
+% JMLR formatting will be applied for submission (jmlr2e class)
+\documentclass[twocolumn]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{natbib}
+\usepackage[margin=0.8in]{geometry}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{hyperref}
+\usepackage{siunitx}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+\usepackage{float}
+\usepackage{xcolor}
+
+\bibliographystyle{unsrtnat}
+
+\title{\textbf{Attention in Single-Cell Foundation Models Primarily Reflects Co-Expression: A Diagnostic Framework with Null-Model Benchmarking}}
+
+\author{Ihor Kendiukhov\\
+Department of Computer Science\\
+University of T\"ubingen\\
+T\"ubingen, Germany\\
+\texttt{kendiukhov@gmail.com}}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We present a diagnostic framework for mechanistic interpretability of single-cell foundation models, organized around three findings. \textbf{First}, pooled attention edges are dominated by co-expression: across scGPT and Geneformer, attention-derived edge scores correlate with gene co-occurrence ($\rho = 0.31$--$0.42$) but not regulatory ground truth ($\rho \approx 0$), explaining near-random GRN recovery (AUROC $\approx 0.5$). \textbf{Second}, layer-stratified analysis via Cell-State Stratified Interpretability (CSSI) reveals where benchmark-discriminative signal concentrates: in scGPT-18L, later layers achieve AUROC 0.69--0.71 against TRRUST, with up to 1.85$\times$ improvement in synthetic settings; however, CSSI is best understood as a diagnostic for signal localization rather than proof of regulatory structure. \textbf{Third}, cross-tissue evaluation across brain, kidney, and whole-human data shows uniform per-layer AUROC ($\sim$0.72 TRRUST, $\sim$0.84 DoRothEA; permutation $p_{\text{raw}} < 10^{-4}$), but simple gene-level baselines (expression and variance products) match or exceed this performance, demonstrating that benchmark AUROC reflects gene-level prominence rather than learned regulatory structure. Nine supporting analyses provide quality control spanning scaling behavior, cross-species transfer, and artifact assessment.
+\end{abstract}
+
+\section{Introduction}
+
+The emergence of transformer-based foundation models for single-cell transcriptomics represents a paradigm shift in computational biology \citep{cui2024scgpt,theodoris2023transfer,yang2022scbert,hao2024largescale}. These models---trained on millions of cells across diverse tissues and conditions---learn rich contextual representations of gene expression that have shown promise for cell type annotation, perturbation response prediction, and gene regulatory network (GRN) inference \citep{chen2024genept,rosen2024universal}. A central and particularly compelling promise is \emph{mechanistic interpretability}: the ability to extract biologically meaningful regulatory circuits directly from model internal representations, especially attention-derived edge scores. Indeed, both scGPT\textasciitilde{}\citep{cui2024scgpt} and Geneformer\textasciitilde{}\citep{theodoris2023transfer} explicitly highlight attention-derived gene network inference as a key application, and downstream studies have adopted attention-derived edge scores as proxies for regulatory edges without rigorous validation\textasciitilde{}\citep{zheng2024benchmarking}.
+
+This promise draws on parallel advances in mechanistic interpretability of large language models (LLMs), where researchers have identified specific computational circuits responsible for well-defined behaviors \citep{elhage2021mathematical,olsson2022incontext,wang2022interpretability}. Techniques such as activation patching \citep{meng2022locating,goldowskydill2023localizing}, automated circuit discovery \citep{conmy2023towards}, and causal mediation analysis \citep{vig2020investigating,pearl2001direct} have been adapted for biological models, with the expectation that attention heads encoding gene--gene relationships correspond to genuine regulatory interactions.
+
+However, the translation of mechanistic interpretability from language models to biological systems faces unique challenges. Unlike the well-defined grammatical structures that language model circuits have been shown to implement \citep{wang2022interpretability,nanda2023progress}, gene regulatory relationships are context-dependent, combinatorial, and only partially observed \citep{pratapa2020benchmarking}. Reference databases such as TRRUST \citep{han2018trrust}, DoRothEA \citep{garcia2019benchmark}, and OmniPath \citep{turei2021integrated} capture only a fraction of true regulatory interactions, and this partial labeling creates persistent evaluation challenges \citep{dibaeinia2020sergio}. Moreover, the biological ground truth itself is condition-specific: a TF--target relationship active in one tissue or cellular state may be absent in another \citep{kamimoto2023dissecting,tabula2022tabula}.
+
+Current mechanistic interpretability practices for single-cell models rest on several critical and largely untested assumptions. \emph{First}, that attention patterns directly reflect causal regulatory relationships---an assumption already challenged in the NLP literature \citep{jain2019attention,serrano2019attention,wiegreffe2019attention,bibal2022attention}. \emph{Second}, that larger datasets consistently improve the reliability of mechanistic interpretations. \emph{Third}, that standard single-component mediation analysis provides unbiased estimates of regulatory importance. \emph{Fourth}, that mechanistic insights transfer reliably across biological contexts. \emph{Fifth}, that attention-derived predictions align with experimental perturbation outcomes from CRISPR screens \citep{dixit2016perturbseq,adamson2016multiplexed}. \emph{Sixth}, that regulatory edges inferred in one species transfer to another via ortholog mapping. \emph{Seventh}, that pseudotime ordering validates the directionality of inferred regulatory edges. \emph{Eighth}, that edge scores reflect biology rather than technical artifacts such as donor or batch identity. \emph{Ninth}, that edge scores can be interpreted as calibrated probabilities of true regulation.
+
+We address these challenges through a systematic framework organized around three core contributions, supported by nine complementary quality-control analyses.
+
+\textbf{Core Contribution 1: Pooled attention edges are dominated by co-expression} (Section~\ref{sec:coexp_regulation}). Across both scGPT and Geneformer, attention-derived edge scores correlate with gene co-occurrence ($\rho = 0.31$--$0.42$) but not with regulatory ground truth ($\rho \approx 0$), explaining the persistent near-random GRN recovery (AUROC $\approx 0.5$) observed across architectures. This mechanistic insight reframes the problem: the failure is not in the models but in the assumption that pooled attention weights reflect regulation.
+
+To summarize the central empirical picture: pooled across layers and heads, attention yields $\rho \approx 0$ / AUROC $\approx 0.5$ with regulatory benchmarks; layer-specific scores can exceed chance, but this signal is largely explainable by gene-level prominence unless expression-matched evaluation is used.
+
+\textbf{Core Contribution 2: Layer-stratified analysis localizes benchmark-discriminative signal} (Sections~\ref{sec:cssi_results}--\ref{sec:scaling}). We introduce Cell-State Stratified Interpretability (CSSI), a diagnostic framework that identifies where benchmark-discriminative signal concentrates across layers and cell states. In scGPT-18L, later layers (L13--L14) achieve AUROC 0.694--0.706 against TRRUST, while naive aggregation yields $\sim$0.54. CSSI's primary value is diagnostic---layer selection---with up to 1.85$\times$ improvement in synthetic settings. Critically, because gene-level null models match this AUROC (Section~\ref{sec:cross_tissue_replication}), elevated per-layer AUROC indicates benchmark enrichment for prominent genes rather than recovery of genuine regulatory structure.
+
+\textbf{Core Contribution 3: Cross-tissue evaluation and null-model benchmarking} (Section~\ref{sec:cross_tissue_replication}). Using scGPT-12L across brain, kidney, and whole-human data, we observe consistent per-layer AUROC ($\sim$0.72 TRRUST, $\sim$0.84 DoRothEA). However, simple gene-level null models---detection-rate, mean-expression, and variance products---match or exceed attention-based AUROC on the same evaluation edges, demonstrating that the bulk of benchmark AUROC is explainable by gene-level statistics without invoking learned regulatory structure. However, expression-matched negative sampling---where negatives are matched on actual gene expression statistics (mean expression and detection rate within $\pm$20\%)---reveals that attention retains AUROC 0.646 [0.539, 0.747] against chance-level baselines (0.522), providing direct evidence of genuine pairwise structure beyond gene-level confounds, albeit at modest magnitude.
+
+Supporting these core findings, nine complementary analyses provide quality control: scaling behavior (Section~\ref{sec:scaling}), baseline comparison (Section~\ref{sec:baseline_comparison}), mediation bias (Section~\ref{sec:bias}), detectability theory (Section~\ref{sec:detectability}), perturbation validation (Section~\ref{sec:perturbation}), cross-species transfer (Section~\ref{sec:ortholog}), pseudotime directionality (Section~\ref{sec:pseudotime}), batch leakage (Section~\ref{sec:batch}), and uncertainty calibration (Section~\ref{sec:calibration}).
+
+
+\section{Methods}
+
+\subsection{Model and Data}
+
+All experiments use scGPT \citep{cui2024scgpt} with pretrained checkpoints applied to tissues from the Tabula Sapiens atlas \citep{tabula2022tabula}. We use two scGPT configurations: \textbf{scGPT-18L} (18 layers, 18 heads per layer; primary CSSI analysis on brain tissue, 1,000 HVGs, 8,330 TRRUST edges) and \textbf{scGPT-12L} (12 layers, 8 heads per layer; cross-tissue replication on brain, kidney, and whole-human, 1,200 HVGs, 27--28 TRRUST edges). scGPT employs a gene-token transformer architecture where each input token represents a gene, and multi-head self-attention matrices encode pairwise gene--gene relationships.
+
+Preprocessing follows the standard scGPT pipeline with Scanpy-based quality control \citep{wolf2018scanpy}, highly variable gene (HVG) selection, and rank-value encoding. We use $hvg = 2000$ and $max\_genes = 1200$ throughout unless otherwise specified.
+
+\subsection{Scaling Behavior Analysis}
+\label{sec:methods_scaling}
+
+We conducted systematic scaling experiments using Geneformer V1-10M across 9 cell count points (25, 50, 100, 150, 200, 300, 500, 750, 1000 cells) with 2 independent repeats per condition and 50-iteration bootstrap confidence intervals. Attention-derived edge scores were extracted from all 6 layers $\times$ 4 heads (pooled) using the top 1,000 most frequent genes as vocabulary. Cell sampling used stratified sampling by cell type, proportional to the Tabula Sapiens immune dataset distribution (20,000 cells, 34,293 genes post-filter). This comprehensive cell count range spans from minimal statistical power (25 cells) through practical thresholds (200 cells) to moderate-scale experiments (1,000 cells), providing detailed characterization of the scaling relationship rather than the sparse 4-point analysis in previous work.
+
+GRN recovery was evaluated against TRRUST v2 \citep{han2018trrust}, focusing on the 8,330 mapped regulatory edges with 161 positive edges evaluated per condition on average. For each cell count, we computed AUROC as the primary performance metric, with statistical analysis including 50-iteration bootstrap confidence intervals per repeat to quantify uncertainty. Curve fitting analysis compared exponential saturation, logarithmic, linear, and power-law models to characterize the scaling relationship, with R$^2$ values used to assess model fit quality. The exponential saturation model took the functional form: AUROC = amplitude $\times$ (1 - exp(-rate $\times$ cells)) + baseline, with parameters estimated via least squares fitting.
+
+\subsection{Mediation Bias Analysis}
+\label{sec:methods_bias}
+
+We formalize the bias problem in activation patching following the causal mediation framework of \citet{pearl2001direct} and \citet{imai2010general}. For mediator component $i$ (an attention head or MLP block), the standard single-component estimate $\hat{m}_i$ is obtained by intervening on component $i$ while holding all other components at their clean-run values. The bias relative to the interaction-aware Shapley value $\phi_i$ \citep{shapley1953value,lundberg2017unified} decomposes as:
+\begin{equation}
+  b_i = \hat{m}_i - \phi_i = -\sum_{|S| \geq 2,\, i \in S} \frac{\mu(S)}{|S|} + \varepsilon_i
+  \label{eq:bias_decomp}
+\end{equation}
+where $\mu(S)$ represents M\"obius interaction coefficients capturing higher-order synergies among sets $S$ of components, and $\varepsilon_i$ captures finite-sample estimation noise. The key insight is that $b_i \neq 0$ whenever the component participates in non-trivial interactions---a condition we test empirically.
+
+We introduce an observable lower bound on aggregate non-additivity:
+\begin{equation}
+  A_{\mathrm{lb}} = \max\!\bigl(0,\; |R| - 1.96 \cdot \mathrm{SE}(R)\bigr)
+  \label{eq:alb}
+\end{equation}
+where $R = TE - \sum_i \hat{m}_i$ is the residual between total effect and the sum of single-component estimates. When $A_{\mathrm{lb}} > 0$, the system is provably non-additive.
+
+Analysis was performed on a frozen cross-tissue mediation archive (6 runs across immune, kidney, and lung tissues from Tabula Sapiens, with head and MLP granularities, 16 run-pairs total) derived from scGPT attention patching experiments.
+
+\subsection{Framework-Level Statistical Correction}
+\label{sec:methods_correction}
+
+Given the comprehensive nature of our evaluation framework, we implement systematic multiple testing correction across all statistical analyses. The twelve complementary analyses collectively involve 47 distinct statistical tests, creating a substantial multiple testing burden. To maintain statistical rigor, we apply Benjamini-Hochberg false discovery rate (FDR) correction \citep{benjamini1995controlling} at $\alpha = 0.05$ across all reported p-values framework-wide. This approach controls the expected proportion of false discoveries while preserving power for genuine effects. All corrected p-values are denoted $q$ (BH-adjusted) throughout; uncorrected values are denoted $p$ (raw) and explicitly labeled. Where a value appears without annotation, it is BH-corrected ($q$). This conservative correction ensures that our conclusions remain statistically valid despite the breadth of our evaluation framework.
+
+\subsection{Detectability Theory}
+\label{sec:methods_detect}
+
+We developed a closed-form detectability framework rooted in statistical detection theory \citep{donoho2004higher}. For a mechanistic signal with effect size $|\mu|$, noise scale $\sigma$, and tail inflation factor $\tau$, the required sample size for detection is:
+\begin{equation}
+  n^* = \left(\frac{(z_{1-\alpha/(2m)} + z_{\mathrm{power}})\,\tau\,\sigma}{|\mu|}\right)^{\!2}
+  \label{eq:sample_complexity}
+\end{equation}
+where $z_{1-\alpha/(2m)}$ accounts for multiple testing correction over $m$ candidate edges (Bonferroni) and $z_{\mathrm{power}}$ ensures specified statistical power (we use $1-\beta = 0.8$ throughout).
+
+Two signal classes are compared: \emph{attention-like} signals derived from raw attention weight aggregation, and \emph{intervention-like} signals obtained through activation patching. Phase diagrams were constructed by systematically varying signal-to-noise ratios and tail inflation factors across biologically realistic parameter ranges.
+
+\subsection{Cross-Context Consistency Analysis}
+\label{sec:methods_cross}
+
+Cross-tissue consistency was assessed using invariant causal discovery principles \citep{peters2016causal} applied to matched TF--target panels across immune, kidney, and lung tissues from Tabula Sapiens. For each tissue pair and granularity (head-level, MLP-level), we computed component-level Spearman rank correlations, sign agreement fractions, and top-$k$ overlap coefficients. Bootstrap uncertainty intervals (10,000 resamples) and permutation-based significance testing (5,000 permutations) were used.
+
+\subsection{Perturbation Validation}
+\label{sec:methods_perturb}
+
+We developed a counterfactual consistency framework comparing scGPT intervention-derived effects to CRISPR perturbation screen outcomes across four experimental datasets: Adamson \citep{adamson2016multiplexed}, Dixit 13-day and 7-day \citep{dixit2016perturbseq}, and Shifrut \citep{shifrut2018genome}. The validation protocol combined rank consistency, sign consistency, confound adjustment, bootstrap uncertainty quantification, and multi-seed stability analysis.
+
+\subsection{Cross-Species Ortholog Transfer Analysis}
+\label{sec:methods_ortholog}
+
+We performed a systematic stress test of correlation-based TF--target edge transfer between human lung (Tabula Sapiens, 65,847 cells) and mouse lung (Krasnow Smart-seq2, 9,409 cells) \citep{travaglini2020molecular}. Using 53,482 one-to-one orthologs and 61 shared transcription factors, we computed Spearman correlation-based edge scores independently in each species. Edge conservation was assessed via rank correlation, sign agreement, top-$k$ overlap (with 1,000-permutation null models), per-TF conservation scores, and edge classification into conserved, fragile, anti-conserved, and weak categories. Human data were subsampled to 10,000 cells for computational tractability. Edges with $|\rho| < 0.05$ were discarded as noise, yielding 25,876 matched edges for cross-species comparison.
+
+\subsection{Pseudotime Directionality Audit}
+\label{sec:methods_pseudotime}
+
+We audited 144 well-characterized TF--target regulatory pairs across two developmental systems: 114 immune lineage pairs (T\textasciitilde{}cell: $n=6{,}998$; B\textasciitilde{}cell: $n=4{,}623$; myeloid: $n=4{,}175$) from the Tabula Sapiens immune subset (20,000 cells), and 30 hematopoietic pairs from the Paul et al. 2015 mouse hematopoiesis dataset (2,730 cells across erythroid, myeloid, and granulocyte lineages) \citep{paul2015transcriptional}. Diffusion pseudotime \citep{haghverdi2016diffusion} was computed per lineage using 2,000 HVGs, 30 PCA components, and $k=15$ nearest neighbors for immune data, and with analogous parameters for hematopoietic data. Cells were binned into equal-width pseudotime bins, and lagged cross-correlations between TF and target expression were computed at appropriate lag ranges per dataset. A pair was deemed ``directionally consistent'' if the peak correlation occurred at a positive lag (TF leads) with the expected sign. Significance was assessed via two null models: (i) shuffled pseudotime (500 permutations) and (ii) random gene pairs. Per-pair $p$-values were FDR-corrected using Benjamini--Hochberg \citep{benjamini1995controlling}.
+
+\subsection{Batch and Donor Leakage Audit}
+\label{sec:methods_batch}
+
+We conducted a systematic leakage audit across three Tabula Sapiens tissue compartments (immune: 20,000 cells, 24 donors; lung: 20,000 cells, 4 donors; kidney: 11,376 cells, 1 donor). TF--target edge scores were computed as Pearson correlations for $\sim$8,000 TF--target pairs per tissue. Leakage was assessed using logistic regression and random forest classifiers trained on per-cell edge-product features (top 200 by variance) to predict donor, batch, and assay method identities via stratified 5-fold cross-validation. An Artifact Sensitivity Index (ASI) was defined as $\text{ASI} = |r_{\text{full}} - r_{\text{balanced}}| / \max(|r_{\text{full}}|, 0.01)$, where $r_{\text{balanced}}$ is the edge score after donor-balanced resampling. Edges with $\text{ASI} > 0.5$ were flagged. Leave-one-donor-out (LODO) stability and cross-donor generalization tests were performed.
+
+\subsection{Uncertainty Calibration of Edge Scores}
+\label{sec:methods_calibration}
+
+We evaluated the calibration of six edge-scoring methods---Pearson and Spearman correlation, mutual information, partial correlation, LASSO regression, and an ensemble---against Perturb-seq ground truth from CRISPRi experiments (Dixit: 19,268 K562 cells, 10 TFs; Adamson: 68,603 K562 cells, 86 genes) \citep{dixit2016perturbseq,adamson2016multiplexed}. Ground truth was defined via differential expression (adjusted $p < 0.05$, $|\log_2\text{FC}| > 0.1$) or top 5\% composite perturbation scores, yielding 17,677 positive edges from 38,608 total. Edge scores were computed from control cells only to ensure independence. Perturbation-level data splitting (50\% train, 25\% calibration, 25\% test) prevented leakage. Post-hoc calibration used Platt scaling \citep{platt1999probabilistic} and isotonic regression \citep{niculescumizil2005predicting}, assessed via Expected Calibration Error (ECE), Brier score, and reliability diagrams. Split conformal prediction sets \citep{vovk2005algorithmic} were constructed with finite-sample coverage guarantees. Cross-dataset transfer was evaluated on an independent Shifrut T\textasciitilde{}cell Perturb-seq dataset \citep{shifrut2018genome} (2,337 edges). Bootstrap stability was assessed over 200 resamples.
+
+
+\subsection{Evaluation Protocol}
+\label{sec:methods_eval_protocol}
+
+All GRN recovery evaluations follow a common protocol.
+\textbf{Candidate edge universe:} all directed TF$\to$target pairs among the selected HVGs (1,000 or 1,200 depending on configuration), where TF status is defined by TRRUST or DoRothEA membership.
+\textbf{Negatives:} in unmatched evaluation, all non-benchmark directed pairs in this universe serve as negatives; in expression-matched evaluation, up to 50 negatives per positive are sampled with both TF and target matched on mean expression and detection rate within $\pm$20\% (details in Section~\ref{sec:cross_tissue_replication}).
+\textbf{AUROC computation:} AUROC is computed on \emph{directed} TF$\to$target edges (i.e., $(i,j)$ and $(j,i)$ are distinct candidates).
+\textbf{Attention score definition:} for a given layer, the attention score for edge $(i,j)$ is the mean attention weight from token $i$ to token $j$, averaged first over all heads in that layer and then over all cells in the evaluation set; per-head scores are reported where noted.
+\textbf{Co-expression statistic:} throughout this paper, ``co-expression'' and ``co-occurrence'' refer to the Spearman rank correlation of raw (non-log-transformed) gene counts across cells, computed per tissue.
+
+\subsection{Cell-State Stratified Interpretability (CSSI)}
+\label{sec:methods_cssi}
+
+Motivated by the scaling plateau documented in Section\textasciitilde{}\ref{sec:scaling}---where increasing cell counts eventually degrades GRN recovery due to heterogeneity-driven attention dilution---we propose \emph{Cell-State Stratified Interpretability} (CSSI), a diagnostic and layer-selection framework that exploits the biological fact that TF--target regulatory relationships are cell-state-specific\textasciitilde{}\citep{kamimoto2023dissecting,tabula2022tabula}.
+
+Given a single-cell expression matrix $\mathbf{X} \in \mathbb{R}^{N \times G}$:
+\begin{enumerate}
+    \item \textbf{Stratification.} Partition cells into $K$ cell-state strata $\{S_1, \ldots, S_K\}$ using cell-type annotations, unsupervised clustering (Leiden), or model-derived embeddings.
+    \item \textbf{Per-stratum edge scoring.} For each stratum $S_k$, compute edge scores $w_{ij}^{(k)}$ for all candidate TF--target pairs.
+    \item \textbf{Aggregation.} Combine scores via CSSI-max ($w_{ij} = \max_k w_{ij}^{(k)}$, capturing edges active in \emph{any} state) or CSSI-mean ($w_{ij} = \sum_k \frac{n_k}{N} w_{ij}^{(k)}$, prevalence-weighted consensus).
+    \item \textbf{Ranking and thresholding.} Standard top-$k$ or FDR-based selection on aggregated scores.
+\end{enumerate}
+
+The key insight is that for a TF--target edge active in stratum $S_1$ with correlation $\rho_1 > 0$ and inactive elsewhere, the pooled correlation $\rho_{\mathrm{pool}} \approx \frac{n_1}{N} \rho_1 \to 0$ as heterogeneity grows, while $\text{CSSI-max} = \rho_1$ is preserved regardless of $K$.
+
+\textbf{Theoretical foundation.} CSSI extends beyond naive cell-type stratification through: (i) formal signal dilution theory ($\rho_{\mathrm{pool}} = \frac{n_{\mathrm{active}}}{N} \rho_{\mathrm{true}}$) with principled aggregation strategies; (ii) empirical testing across synthetic, biologically structured, and real attention matrix settings; and (iii) practical guidelines for layer selection (architecture-dependent; see Section~\ref{sec:cross_tissue_replication}) and optimal application conditions ($N < 2{,}000$, rare cell populations).
+
+\subsection{Synthetic Ground-Truth Validation}
+\label{sec:methods_synthetic}
+
+We generated synthetic single-cell expression data using steady-state GRN dynamics ($\frac{dX}{dt} = AX + b = 0$) with realistic noise sources including dropout ($p = 0.1$), technical noise, batch effects, and heavy-tailed expression. 
+
+\textbf{Justification for custom generator over SERGIO.} While SERGIO \citep{dibaeinia2020sergio} is the established community standard for synthetic single-cell GRN validation, it is fundamentally incompatible with our theoretical framework for three critical reasons. First, \emph{attention matrix modeling}: SERGIO generates realistic expression dynamics from regulatory networks, but does not model the formation of attention weight matrices---the central object of our analysis. Our theoretical predictions about scaling failure, mediation bias, and CSSI effectiveness require explicit control over the mapping from ground-truth regulatory edges to synthetic attention patterns, which SERGIO cannot provide. Second, \emph{heterogeneity control}: Our scaling failure theory requires precise control over cellular heterogeneity levels to test the predicted relationship between diversity and attention dilution. SERGIO's stochastic simulation framework does not provide the deterministic control over cell-state composition needed for these controlled experiments. Third, \emph{mechanistic validation}: Our predictions about Shapley value improvements and detectability thresholds require synthetic attention matrices with known interaction structures between model components. SERGIO generates biological expression patterns but not the internal model representations needed to validate mechanistic interpretability methods. Our custom generator is specifically designed to test mechanistic interpretability hypotheses rather than biological realism, making it the appropriate choice despite SERGIO's broader validation in the GRN inference literature. Ground-truth networks had sparse connectivity ($\rho = 0.15$) with hierarchical TF--regulator--target structure. Synthetic attention matrices were generated as $A_{\text{attention}} = \tanh(A_{\text{true}} + \epsilon_{\text{structured}} + \epsilon_{\text{expression-bias}})$. Performance was evaluated across cell counts (200--2000), SNR regimes, and mediation estimation approaches.
+
+\subsection{Multi-Model Validation}
+\label{sec:methods_multimodel}
+
+To test whether findings generalize beyond scGPT, we conducted parallel experiments using Geneformer\textasciitilde{}\citep{theodoris2023transfer}, which employs rank-based tokenization rather than raw expression values. Using the Geneformer V1-10M model, we performed comprehensive 9-point scaling behavior analysis (25, 50, 100, 150, 200, 300, 500, 750, 1000 cells), attention pattern extraction for GRN inference, and cross-context consistency evaluation. We additionally tested scVI\textasciitilde{}\citep{lopez2018deep}, a variational autoencoder providing a non-attention baseline (latent space distances as edge scores, evaluated at 200 and 500 cells), and C2S-Pythia (405M parameters; unpublished), a causal language model trained on diverse single-cell tasks (attention-derived edges at 50 and 200 cells, reduced range due to computational constraints), to assess scaling behavior across fundamentally different architectures. We note that the cell ranges tested differ across models due to computational and data constraints; while this limits direct quantitative comparison of scaling magnitudes, the qualitative scaling trends remain informative.
+
+
+\section{Results}
+
+We organize results around three core contributions---the mechanistic insight that pooled attention edges are dominated by co-expression, the methodological contribution of layer-stratified analysis via CSSI, and cross-tissue evaluation with null-model benchmarking---followed by supporting analyses that provide comprehensive quality control.
+
+\subsection{Core Finding: Pooled Attention Edges Are Dominated by Co-Expression}
+\label{sec:coexp_regulation}
+
+The most important mechanistic finding of this study is the striking dissociation between what pooled attention weights encode (co-expression) and what they are commonly interpreted as representing (regulation).
+
+\textbf{Evidence.} Across both scGPT and Geneformer, attention-derived edge scores show strong, highly significant correlations with gene--gene expression co-occurrence (Spearman $\rho = 0.31$--$0.42$, $p_{\text{raw}} < 10^{-50}$) but effectively zero correlation with curated regulatory ground truth from TRRUST ($\rho = -0.01$--$0.02$, $p_{\text{raw}} > 0.3$). This pattern is consistent across architectures despite fundamental differences in tokenization (raw expression vs.\ rank-value encoding), training objective, and model scale. The magnitude of the co-expression correlation ($\rho \approx 0.35$) indicates that approximately 12\% of the variance in attention-derived edge scores is explained by expression co-occurrence---a substantial fraction given the high dimensionality of gene--gene interaction space.
+
+\textbf{Multi-model convergence.} To test whether this limitation is architecture-specific, we replicated the full GRN evaluation pipeline across scGPT and Geneformer V1-10M\textasciitilde{}\citep{theodoris2023transfer}. Both models achieve near-random AUROC ($\approx 0.5$) for attention-based GRN inference despite fundamental differences in architecture (GPT-style decoder vs.\ BERT encoder), tokenization, and training corpus (Table\textasciitilde{}\ref{tab:cross_model_auroc}). Geneformer's rank-based tokenization produces more stable attention patterns---cross-context cosine similarity of $0.979 \pm 0.001$---but this stability does not translate into GRN recovery. The attention patterns are \emph{stably uninformative} for regulatory inference. Preliminary experiments with scVI\textasciitilde{}\citep{lopez2018deep} and C2S-Pythia showed qualitatively similar near-random GRN recovery (AUROC 0.48--0.53).
+
+\begin{table}[t]
+\centering
+\caption{Cross-model AUROC comparison for attention-based GRN inference. Both architectures converge on near-random performance ($\approx 0.5$) despite different scaling dynamics.}
+\label{tab:cross_model_auroc}
+\begin{tabular}{lcccc}
+\toprule
+& \multicolumn{2}{c}{TRRUST AUROC} & \multicolumn{2}{c}{DoRothEA AUROC} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+Cells & scGPT & Geneformer & scGPT & Geneformer \\
+\midrule
+200  & 0.51 & 0.444 & 0.50 & 0.473 \\
+500  & 0.49 & 0.549 & 0.48 & 0.486 \\
+1000 & 0.46 & 0.522 & 0.47 & 0.486 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Connections across findings.} The co-expression--regulation dissociation explains several key results throughout this paper. Scaling plateaus (Section~\ref{sec:scaling}) because heterogeneity drives attention toward the dominant co-expression signal. Geneformer's stable attention patterns are \emph{stably co-expression-encoding}---the stable signal is the wrong signal for regulatory inference. Dedicated GRN methods (GENIE3, GRNBoost2) achieve identical near-random performance on brain tissue (Section~\ref{sec:baseline_comparison}), confirming the challenge is intrinsic to regulatory signal recovery from heterogeneous tissue.
+
+\textbf{Implications for the field.} Attention-based ``regulatory networks'' are more accurately described as co-expression networks with attention-derived weighting. The path from co-expression to regulation requires: (i) architecture-specific layer and head selection, (ii) cell-state stratification, or (iii) training objectives that incentivize causal rather than correlational structure.
+
+\textbf{Preview.} This co-expression dominance characterizes \emph{pooled} attention; as we show next, per-layer analysis reveals that regulatory signal is present but concentrated in specific layers, resolving the apparent contradiction between near-zero pooled correlation and above-chance per-layer AUROC.
+
+
+\subsection{Layer-Stratified Analysis Localizes Benchmark-Discriminative Signal via CSSI}
+\label{sec:cssi_results}
+
+Despite the co-expression dominance documented above, attention matrices contain benchmark-discriminative signal in specific layers and heads when properly stratified. We introduce Cell-State Stratified Interpretability (CSSI) as a diagnostic framework for identifying where this signal concentrates---though as Section~\ref{sec:cross_tissue_replication} demonstrates, the signal itself reflects gene-level prominence rather than learned regulatory structure.
+
+\textbf{Layer dependence of benchmark-discriminative signal (scGPT-18L).} In scGPT-18L, early layers (L0--L6) show the strongest co-expression correlation and lowest benchmark AUROC (0.513--0.615), while later layers (L13--L14) achieve the highest benchmark AUROC (0.694--0.706). This progressive transition from co-expression to regulation encoding is architecture-specific: scGPT-12L distributes regulatory signal uniformly across layers (Section~\ref{sec:cross_tissue_replication}). In scGPT-18L, the best individual heads (L13\_H10, L14\_H15; AUROC 0.706) substantially exceed the co-expression baseline.
+
+\textbf{Evidence from synthetic experiments.} In controlled synthetic experiments with state-specific GRNs, pooled inference exhibited strong scaling failure: F1 decreased from $0.850 \pm 0.053$ at 200 cells (2 states) to $0.514 \pm 0.083$ at 1,000 cells (10 states). CSSI-max with oracle cell-state labels maintained F1 $\geq 0.900$ across all configurations (Table\textasciitilde{}\ref{tab:cssi_scaling}). The CSSI advantage increased monotonically with heterogeneity (1.13$\times$ at 2 states to 1.85$\times$ at 6 states).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.45\textwidth]{figures/fig_cssi_scaling.png}
+\caption{\textbf{CSSI mitigates scaling failure.} F1 score as a function of cell-state heterogeneity. Pooled inference degrades monotonically with increasing heterogeneity, while CSSI-max maintains near-perfect recovery.}
+\label{fig:cssi_scaling}
+\end{figure}
+
+\begin{table}[t]
+\centering
+\caption{CSSI mitigates scaling failure in synthetic experiments. F1 reported as mean $\pm$ std over 10 seeds. Ratio = CSSI-max F1 / Pooled F1.}
+\label{tab:cssi_scaling}
+\begin{tabular}{lccccc}
+\toprule
+Config & $N$ & States & Pooled F1 & CSSI-max F1 & Ratio \\
+\midrule
+Small   & 200  & 2  & $0.850 \pm 0.053$ & $0.957 \pm 0.050$ & 1.13$\times$ \\
+Medium  & 400  & 4  & $0.657 \pm 0.100$ & $0.921 \pm 0.071$ & 1.40$\times$ \\
+Large   & 600  & 6  & $0.486 \pm 0.100$ & $0.900 \pm 0.069$ & 1.85$\times$ \\
+XLarge  & 1000 & 8  & $0.550 \pm 0.089$ & $0.967 \pm 0.029$ & 1.76$\times$ \\
+XXLarge & 1000 & 10 & $0.514 \pm 0.083$ & $0.932 \pm 0.049$ & 1.81$\times$ \\
+Massive & 1500 & 12 & $0.527 \pm 0.041$ & $0.942 \pm 0.027$ & 1.79$\times$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Real attention matrix validation (scGPT-18L).} We conducted systematic evaluation using scGPT-18L attention weights from 497 human brain cells across 7 cell types against 8,330 TRRUST regulatory edges. \textbf{Important methodological caveat:} These findings are exploratory; the held-out validation framework uses the same dataset for layer identification and performance reporting, introducing potential circularity. Initial pooled baseline showed AUROC 0.543. Layer-stratified analysis revealed substantial heterogeneity: Layer\textasciitilde{}13 achieved pooled AUROC 0.694 and Layer\textasciitilde{}14 achieved 0.683 (Table\textasciitilde{}\ref{tab:cssi_real_layers}).
+
+\begin{table}[t]
+\centering
+\caption{Per-layer GRN recovery from scGPT-18L attention on 497 human brain cells (7 cell types, 8,330 TRRUST edges). Pooled = all-head average; Best CSSI = best-performing variant per layer.}
+\label{tab:cssi_real_layers}
+\begin{tabular}{rcllr}
+\toprule
+Layer & Pooled & Best CSSI & CSSI AUROC & $\Delta$ \\
+\midrule
+0  & 0.552 & mean      & 0.566 & +0.014 \\
+1  & 0.600 & mean      & 0.608 & +0.008 \\
+4  & 0.610 & range     & 0.609 & $-$0.001 \\
+7  & 0.597 & deviation & 0.608 & +0.011 \\
+10 & 0.615 & range     & 0.648 & +0.033 \\
+12 & 0.656 & range     & 0.666 & +0.010 \\
+\textbf{13} & \textbf{0.694} & \textbf{deviation} & \textbf{0.694} & \textbf{0.000} \\
+\textbf{14} & \textbf{0.683} & \textbf{deviation} & \textbf{0.682} & $-$\textbf{0.001} \\
+16 & 0.669 & range     & 0.678 & +0.009 \\
+17 & 0.673 & deviation & 0.673 & +0.000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+At the top-performing layers (L13--L14), pooled and CSSI-stratified scores were essentially equivalent ($\Delta \leq 0.001$), indicating these deep layers have already learned to resolve cell-state-specific signals internally. \textbf{CSSI's primary value on real data is diagnostic}---identifying which layers contain regulatory signal---rather than uniformly improving AUROC. The CSSI advantage concentrates in intermediate layers (L10: $\Delta = +0.033$).
+
+\textbf{Held-out validation addresses post-hoc selection concern.} A key concern with CSSI is that stratum or layer selection on the same data used for evaluation inflates performance (post-hoc optimism). To address this directly, we performed split-half held-out validation: data were divided into independent train and test halves, with CSSI variant and layer selection performed exclusively on the train half and evaluation on the held-out test half. On synthetic data, CSSI's advantage not only persists but \emph{increases} on held-out data (Table\textasciitilde{}\ref{tab:cssi_splithalf}), with held-out ratios ranging from 1.45$\times$ to 3.20$\times$---ruling out overfitting as an explanation. On real scGPT-18L attention matrices (248/249 cell split), layers identified from one half achieved AUROC 0.619 on the other versus 0.539 random baseline ($p \approx 0.02$, permutation test on edges, 1{,}000 permutations), confirming that the layer-stratified signal generalises beyond the selection set.
+
+\begin{table}[t]
+\centering
+\caption{CSSI split-half validation on synthetic data. CSSI variant selected on train half, evaluated on held-out test half.}
+\label{tab:cssi_splithalf}
+\begin{tabular}{lcccc}
+\toprule
+Config & States & Pooled F1 (held-out) & CSSI F1 (held-out) & Ratio \\
+\midrule
+Medium  & 4  & $0.460 \pm 0.053$ & $0.667 \pm 0.000$ & 1.45$\times$ \\
+Large   & 6  & $0.303 \pm 0.057$ & $0.663 \pm 0.010$ & 2.19$\times$ \\
+XLarge  & 8  & $0.320 \pm 0.037$ & $0.667 \pm 0.000$ & 2.08$\times$ \\
+XXLarge & 10 & $0.203 \pm 0.053$ & $0.650 \pm 0.027$ & 3.20$\times$ \\
+Massive & 12 & $0.227 \pm 0.047$ & $0.667 \pm 0.000$ & 2.94$\times$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Decision implication.} Practitioners should implement hierarchical stratification: first by attention layer, then by cell state. For scGPT-18L, later layers (L13+) concentrate benchmark-discriminative signal, but this is architecture-specific. Layer-stratified evaluation should be performed for each new architecture. However, elevated AUROC at any layer should not be interpreted as evidence of regulatory learning without first ruling out gene-level confounds (Section~\ref{sec:cross_tissue_replication}).
+
+
+\subsection{Cross-Tissue Evaluation and Null-Model Benchmarking}
+\label{sec:cross_tissue_replication}
+
+A critical limitation of the scGPT-18L analysis is that the core finding rests on a single tissue. To assess generalizability, we leveraged pre-computed per-layer attention matrices across three tissue contexts using scGPT-12L (12 layers, 8 heads).
+
+\textbf{Caveat:} The following cross-tissue analyses rely on 27 TRRUST edges (14 TFs). Results should be interpreted as suggestive given this limited evaluation set; bootstrap 95\% CIs are $\pm$0.03--0.05.
+
+\textbf{Evidence.} Benchmark AUROC was remarkably uniform across tissues and layers (Table~\ref{tab:cross_tissue_layers}). Against TRRUST (27--28 mapped edges spanning 14 TFs including STAT3, TP53, NFKB1, SP1, MYC), brain achieved mean AUROC $0.718 \pm 0.002$, kidney $0.716 \pm 0.002$, and whole-human $0.716 \pm 0.002$. Against DoRothEA (123 edges), all tissues achieved AUROC $\sim$0.84 with even tighter agreement. Cross-tissue AUROC differences were not statistically significant ($\Delta_{\text{brain--kidney}} < 0.002$). The invariance of AUROC across all layers and tissues suggests this metric reflects gene-level prominence---a property shared by benchmark TFs regardless of biological context---rather than layer-specific or tissue-specific regulatory encoding.
+
+\begin{table}[h]
+\centering
+\small
+\caption{\textbf{Cross-tissue layer-stratified AUROC (scGPT-12L)} against TRRUST (27--28 mapped edges) and DoRothEA (123 mapped edges). Bootstrap 95\% CIs computed over 1,000 resamples of the evaluation edge set are $\pm$0.03--0.05 for TRRUST and $\pm$0.02--0.03 for DoRothEA across all cells, reflecting the small evaluation set sizes.}
+\label{tab:cross_tissue_layers}
+\begin{tabular}{lcccccc}
+\hline
+ & \multicolumn{3}{c}{TRRUST} & \multicolumn{3}{c}{DoRothEA} \\
+Layer & Brain & Kidney & Whole & Brain & Kidney & Whole \\
+\hline
+L0  & \textbf{0.72} & 0.71 & 0.72 & 0.84 & 0.84 & 0.84 \\
+L1  & \textbf{0.72} & 0.72 & 0.71 & 0.84 & 0.84 & 0.84 \\
+L2  & 0.72 & 0.71 & 0.71 & 0.84 & 0.84 & 0.84 \\
+L3  & 0.72 & 0.72 & 0.72 & 0.84 & 0.84 & 0.84 \\
+L4  & 0.72 & \textbf{0.72} & 0.72 & 0.84 & 0.84 & 0.84 \\
+L5  & 0.72 & \textbf{0.72} & 0.72 & 0.84 & 0.84 & 0.84 \\
+L6  & 0.72 & 0.72 & \textbf{0.72} & 0.84 & 0.84 & \textbf{0.84} \\
+L7  & 0.72 & 0.72 & 0.72 & 0.84 & \textbf{0.84} & 0.84 \\
+L8  & 0.72 & 0.72 & 0.72 & \textbf{0.85} & \textbf{0.85} & 0.84 \\
+L9  & 0.71 & 0.72 & 0.72 & \textbf{0.85} & 0.84 & 0.84 \\
+L10 & 0.72 & 0.72 & 0.72 & 0.84 & 0.84 & 0.84 \\
+L11 & 0.71 & 0.72 & 0.72 & 0.84 & 0.84 & 0.84 \\
+\hline
+Mean & 0.72 & 0.72 & 0.72 & 0.84 & 0.84 & 0.84 \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Limitations of the 27-edge evaluation set.} The TRRUST evaluation set for scGPT-12L contains only 27--28 mapped edges spanning 14 TFs, raising the concern that the $\sim$0.72 AUROC could be trivially achieved if these TFs are constitutively expressed across tissues. The wide bootstrap confidence intervals ($\pm$0.03--0.05) and cross-tissue differences below 0.002 are within sampling noise, precluding claims about tissue-specific variation. The DoRothEA evaluation set (123 edges, AUROC $\sim$0.84) partially mitigates this concern by providing a larger, independently curated edge set with narrower confidence intervals, though the constitutive-expression confound cannot be fully excluded without tissue-specific ground truth.
+
+\textbf{Gene-level null models match or exceed attention AUROC.} To test whether the observed $\sim$0.72 TRRUST AUROC reflects learned regulatory structure or simpler gene-level statistics, we computed three ``dumb baselines'' using the same evaluation edges and negatives: detection-rate product ($\text{score}(i,j) = \text{det}(i) \cdot \text{det}(j)$), mean-expression product, and variance product. All three null models match or exceed attention-based AUROC (Table~\ref{tab:dumb_baselines}). This result holds across both TRRUST and DoRothEA, and across expanded edge sets from the full DoRothEA database (483 edges, all confidence levels). The implication is clear: curated TF--target databases are enriched for well-studied, highly expressed genes, and any scoring method correlated with expression level will achieve above-chance AUROC without encoding regulatory relationships. The attention-derived AUROC of $\sim$0.72 does not demonstrate learned regulation; it demonstrates that attention, like expression statistics, is correlated with gene prominence.
+
+\textbf{Expression-matched evaluation confirms pairwise signal.} To test whether attention captures genuine pairwise structure beyond marginal biases, we performed expression-matched negative sampling using \emph{actual gene expression statistics} from the source single-cell data (Tabula Sapiens immune subset, 20{,}000 cells, 1{,}200 HVGs). The negative sampling universe consists of all non-TRRUST gene pairs among the 1{,}200 HVGs. For each of the 27 TRRUST positive edges, we sampled up to 50 matched negatives where both the substitute TF and target had mean expression within $\pm$20\% \emph{and} detection rate within $\pm$20\% of the positive pair's values---directly controlling for the expression-driven confound identified above without relying on attention-derived quantities. Statistical significance was assessed via 1{,}000 bootstrap resamples of the combined positive-plus-negative set. We note that the 27 positive edges span only 14 TFs, with some TFs contributing multiple targets; positives are therefore not fully independent, which may inflate effective sample size and narrow confidence intervals relative to a truly independent edge set.
+
+Expression-product baselines score near chance on matched negatives (AUROC = 0.522). Attention, however, retains an AUROC of \textbf{0.646} (95\% bootstrap CI: [0.539, 0.747]; best single head L0\_H6: 0.662, CI: [0.561, 0.765]; median across all 96 heads: 0.642). The marginal-attention-product baseline scores 0.574, confirming that expression matching partially but not fully neutralises marginal confounds. This $\sim$12 percentage-point gap between attention and the expression-product baseline on expression-matched negatives constitutes direct evidence that attention encodes pairwise structure beyond what gene-level statistics can explain. However, the wide confidence intervals reflect the small positive set ($n = 27$, spanning 14 TFs), and these results should be interpreted as suggestive rather than definitive; a larger curated edge set would be needed to narrow the CI below $\pm$0.05.
+
+\begin{table}[h]
+\centering
+\small
+\caption{\textbf{Gene-level null models vs.\ attention AUROC} on the same evaluation edges. Null models use only per-gene statistics (no pairwise information). All null models match or exceed attention across both reference databases.}
+\label{tab:dumb_baselines}
+\begin{tabular}{lcccc}
+\hline
+Scoring method & TRRUST & DoRothEA & DoRothEA & DoRothEA \\
+ & (28) & A+B (27) & A--C (65) & all (483) \\
+\hline
+Detection rate $\times$ & 0.750 & 0.797 & 0.823 & 0.716 \\
+Mean expression $\times$ & 0.764 & 0.817 & 0.835 & 0.726 \\
+Variance $\times$ & 0.773 & 0.822 & 0.836 & 0.725 \\
+Attention (pooled) & 0.718 & 0.702 & 0.752 & 0.661 \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Leave-one-TF-out robustness.} A rigorous robustness check would involve leave-one-TF-out analysis, removing each TF and its associated edges to ensure that no single TF drives the observed AUROC. However, with only 14 TFs contributing to the 27-edge evaluation set, each leave-one-out fold would remove a substantial fraction of the positives, yielding insufficient statistical power for meaningful inference. We acknowledge this as a limitation; future work with larger regulatory vocabularies (e.g., genome-scale perturbation atlases covering hundreds of TFs) would enable properly powered leave-one-TF-out evaluation.
+
+\textbf{Depth-dependent pattern does not replicate uniformly.} The pronounced depth-dependent pattern of scGPT-18L (L13--L14 dominant) did not replicate in scGPT-12L---all layers perform equivalently. This uniformity across layers is itself diagnostic: if different layers learned qualitatively different representations (e.g., co-expression in early layers, regulation in later layers), AUROC should vary with depth. The flat profile instead suggests that AUROC reflects a layer-invariant property of the evaluation edges---namely, gene-level prominence---rather than layer-specific regulatory encoding. A permutation test (10,000 random 27-edge samples from the TF--target universe) confirms that the observed $\sim$0.69 AUROC significantly exceeds chance ($p < 10^{-4}$, $z = 3.4$), but as the null-model analysis shows, this is expected for any scoring method correlated with expression level. The higher DoRothEA AUROC likely reflects both the larger evaluation set (123 vs.\ 28 edges) and the ChIP-seq-derived nature of DoRothEA edges; notably, DoRothEA's $\sim$0.84 may partly reflect that ChIP-seq captures physical TF binding rather than functional regulation, representing a less stringent benchmark than TRRUST's literature-curated functional interactions.
+
+\textbf{Reconciling the metric levels: a cascade of increasingly controlled evaluations.}
+The four AUROC values reported across this study are not contradictory but reflect a cascade of increasingly stringent controls.
+Pooled across all layers and heads, attention yields AUROC $\approx 0.5$ because co-expression dominates and the regulatory signal is washed out (Section~\ref{sec:coexp_regulation}).
+Per-layer evaluation reveals AUROC $\sim$0.72, showing that deeper layers concentrate benchmark-discriminative signal (Table~\ref{tab:cross_tissue_layers}).
+However, gene-level null models (detection-rate, mean-expression, and variance products) achieve AUROC $\geq 0.75$ on the same edges (Table~\ref{tab:dumb_baselines}), demonstrating that per-layer AUROC is fully explainable by gene-level prominence---curated benchmarks are enriched for well-studied, highly expressed genes.
+Finally, expression-matched negative sampling removes this prominence confound: attention retains AUROC 0.646 versus 0.522 for expression-product baselines, providing direct evidence that genuine pairwise regulatory structure survives after controlling for marginal gene statistics, albeit at modest magnitude.
+Each successive evaluation peels away one layer of confounding, and the residual signal---though small---is the most credible estimate of what attention has actually learned about regulation.
+
+\textbf{Inference.} The cross-tissue and cross-layer uniformity of AUROC is best understood as evidence of a degenerate evaluation design rather than robust biological signal. Curated benchmarks like TRRUST and DoRothEA are enriched for well-studied, highly expressed TFs (STAT3, TP53, MYC, SP1, NFKB1), and any method whose scores correlate with expression level will achieve above-chance AUROC without encoding regulatory relationships. The practical recommendation to ``focus on later layers'' applies only to scGPT-18L; with scGPT-12L, any layer provides equivalent performance precisely because the discriminative signal is gene-level rather than layer-specific. However, expression-matched evaluation (Section~\ref{sec:cross_tissue_replication}) reveals that attention retains AUROC 0.646 (95\% CI: [0.539, 0.747]) when expression confounds are controlled via matching on actual gene expression statistics, compared to 0.522 for the expression-product baseline---demonstrating that genuine pairwise structure exists in attention weights, even though it accounts for only a fraction of the unmatched AUROC.
+
+
+%% ============================================================
+%% SUPPORTING ANALYSES
+%% ============================================================
+
+\subsection*{Supporting Analyses}
+\addcontentsline{toc}{subsection}{Supporting Analyses}
+
+The following analyses provide quality control, boundary conditions, and methodological context for the three core findings above. Each addresses a specific assumption underlying attention-based GRN inference. Section headers are tagged \textbf{[ATTN]} (attention-derived edges) or \textbf{[CORR]} (correlation-derived edges) to clarify which analyses test attention-specific phenomena and which establish general boundary conditions applicable to \emph{any} edge-scoring method. The [CORR]-tagged analyses (cross-species transfer, pseudotime directionality, batch leakage, calibration) define the difficulty of regulatory inference independent of the scoring method used; converting them to attention-specific tests would require extracting attention matrices in each species/condition and performing cross-species or cross-condition comparisons on attention-derived edges directly.
+
+\subsection{Scaling Plateau and Decline in Attention-Derived GRN Recovery \textnormal{[ATTN]}}
+\label{sec:scaling}
+
+To test whether larger datasets improve mechanistic interpretability, we conducted systematic scaling analysis using Geneformer across 9 cell count points ranging from 25 to 1,000 cells, with 2 independent repeats per condition and 50-iteration bootstrap confidence intervals. The expectation---based on neural scaling laws \citep{kaplan2020scaling,hoffmann2022training}---was that increasing cell counts would monotonically improve GRN recovery.
+
+\textbf{Evidence.} Contrary to this expectation, we observed a complex non-monotonic scaling relationship that challenges simple interpretations of scaling failure (Figure\textasciitilde{}\ref{fig:scaling_failure}). Against TRRUST (8,330 mapped edges, 161 evaluated per condition), AUROC performance improved substantially from 25 cells (0.536) up to 750 cells (0.611), representing a meaningful +0.075 AUROC gain over the scaling range. However, performance then declined at 1,000 cells (0.596), suggesting the onset of scaling failure at high cell counts. The most critical transition occurred between 150 and 200 cells (+0.037 AUROC, +6.6% relative improvement), identifying an approximate threshold in the range of 150--300 cells for reliable above-chance performance. While all 95% bootstrap confidence intervals overlap---indicating that adjacent cell count comparisons are not individually statistically significant---the overall trend from 25 to 750 cells is consistent and represents genuine signal recovery improvement.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.45\textwidth]{figures/fig_ext_multiseed_scaling_trrust_ci.png}
+\caption{\textbf{Non-monotonic scaling relationship in Geneformer attention-based GRN recovery.} AUROC performance with 95\% bootstrap confidence intervals against TRRUST across 9 cell count points from 25 to 1,000 cells. Performance improves substantially up to 750 cells, then declines, exhibiting saturation-then-failure dynamics rather than monotonic degradation.}
+\label{fig:scaling_failure}
+\end{figure}
+
+\textbf{Curve fitting analysis} revealed that the scaling relationship is best described by an exponential saturation model rather than linear or monotonic degradation. The exponential saturation model achieved the best fit (R$^2$ = 0.90) with the functional form: AUROC = 0.089 $\times$ (1 - exp(-0.00554 $\times$ cells)) + 0.519, implying a baseline AUROC of approximately 0.52 (near chance), an asymptotic ceiling of approximately 0.61, and a characteristic scale of 181 cells (Table\textasciitilde{}\ref{tab:scaling_models}).
+
+\begin{table}[t]
+\centering
+\caption{Curve fitting analysis for scaling relationship. Power-law fitting did not converge.}
+\label{tab:scaling_models}
+\begin{tabular}{lrl}
+\toprule
+Model & R$^2$ & Equation \\
+\midrule
+\textbf{Exponential saturation} & \textbf{0.90} & AUROC = 0.089(1 - exp(-0.00554 $\times$ cells)) + 0.519 \\
+Logarithmic & 0.83 & AUROC = 0.022 ln(cells) + 0.457 \\
+Linear & 0.59 & AUROC = 0.0000683 $\times$ cells + 0.552 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The marginal improvement analysis revealed that the largest single performance jump occurred between 150 and 200 cells (+0.037 AUROC, +6.6%), with diminishing returns beyond 200 cells and eventual decline from 750 to 1,000 cells (-0.015 AUROC, -2.4%). This pattern suggests that approximately 150--300 cells represents an approximate threshold for meaningful regulatory signal recovery, below which attention-based GRN inference performs near chance levels. In contrast to a linear model which provided poor fit (R$^2$ = 0.59), the exponential saturation relationship confirms that scaling exhibits diminishing returns rather than proportional improvement.
+
+\textbf{Inference.} The scaling relationship reveals a nuanced pattern that challenges simple interpretations of scaling failure. Rather than monotonic degradation, we observe exponential saturation followed by decline---performance improves substantially from 25 to 750 cells before declining at 1,000 cells. The exponential saturation model (R$^2$ = 0.90) provides strong evidence for diminishing returns in attention-based GRN recovery, with an approximate threshold in the range of 150--300 cells and a practical ceiling near 0.61 AUROC. The final decline from 750 to 1,000 cells represents the onset of scaling failure rather than a universal phenomenon.
+
+\textbf{Biological interpretation.} The pattern reflects competing effects: below 200 cells, insufficient power prevents signal detection; between 200--750, increased sample size improves signal-to-noise; beyond 750, cellular heterogeneity causes attention dilution across diverse co-expression patterns.
+
+\textbf{Alternative explanation: overfitting versus genuine scaling failure.} An important alternative is that superior performance at smaller cell counts reflects overfitting to sparse reference annotations rather than genuine signal recovery. To test this, we performed a controlled saturation analysis using synthetic ground truth networks at 50\% and 100\% completeness. Scaling failure was \emph{more} pronounced with complete references (18.3\% degradation from 50 to 200 cells) than incomplete ones (5.1\%), directly contradicting the hypothesis that scaling failure is a reference completeness artifact. This supports scaling failure as a genuine phenomenon, though this analysis assumes a linear noise-cell count relationship ($\sigma = 0.05 + 0.002 \times \text{cell\_count}$) that may not hold in practice.
+
+\textbf{Decision implication.} Practitioners should target approximately 200-750 cells for optimal attention-based GRN recovery, recognizing that performance plateaus around 750 cells before declining. Very small datasets ($<$200 cells) lack statistical power for reliable regulatory signal detection, while very large datasets ($>$750 cells) may suffer from heterogeneity-driven attention dilution. The exponential saturation model provides a quantitative framework for predicting performance at different cell counts, with the characteristic scale of 181 cells serving as a practical guideline for experimental design.
+
+
+\subsection{Baseline Comparison: Beyond Attention Methods \textnormal{[ATTN]}}
+\label{sec:baseline_comparison}
+
+A critical weakness in attention-based GRN inference is that we observe near-random performance (AUROC $\approx 0.52$), similar to simple correlation methods. This raises the question: does attention specifically fail, or is the poor performance due to tissue-specific characteristics or inappropriate benchmarking? To address this, we conducted a comprehensive comparison of dedicated gene regulatory network (GRN) inference methods against attention-based approaches.
+
+\textbf{Evidence.} We evaluated multiple baseline approaches on DLPFC brain tissue data (500 randomly sampled cells, top 500 most variable genes): Spearman correlation, mutual information (scikit-learn), GENIE3 \citep{huynh2010inferring}, GRNBoost2 \citep{moerman2019grnboost2}, and attention-based edge scores. All methods were evaluated against TRRUST and DoRothEA using AUROC, AUPRC, and Precision@10k metrics.
+
+Remarkably, all approaches show similar poor performance, with AUROC values clustering around 0.50--0.53: Spearman correlation (AUROC 0.521), mutual information (0.518), GENIE3 (0.523), GRNBoost2 (0.526), and attention-based methods (0.524). State-of-the-art dedicated GRN inference algorithms achieve nearly identical performance to attention-based approaches, while requiring 89--127 seconds computation time versus 0.1 seconds for attention extraction.
+
+\textbf{Inference.} The universal poor performance across all methods---including GENIE3 and GRNBoost2---indicates that the issue is tissue-specific rather than attention-specific, likely reflecting TRRUST/DoRothEA coverage limitations for brain-specific regulatory contexts.
+
+\textbf{Decision implication.} Attention-based GRN inference should be evaluated alongside dedicated baselines before concluding method-specific failure. Given equivalent performance, attention-derived edge scores offer a computational efficiency advantage (0.1s vs.\ 89--127s) for exploratory analysis.
+
+
+\subsection{Preliminary Evidence of Non-Additivity in Mediation Analysis \textnormal{[ATTN]}}
+\label{sec:bias}
+
+Activation patching has become the standard tool for localizing mechanistic function in transformers \citep{meng2022locating,vig2020investigating,goldowskydill2023localizing}. However, the standard single-component protocol implicitly assumes additivity.
+
+\textbf{Evidence.} Analysis of frozen cross-tissue mediation archives revealed preliminary evidence of additivity violations, though with only 16 run-pairs tested ($N = 16$), this analysis is severely underpowered to provide definitive conclusions about the prevalence of non-additivity across different tissues and contexts. Across these 16 run-pairs, lower bounds on aggregate non-additivity (Equation\textasciitilde{}\ref{eq:alb}) were positive in 10 cases (rate 0.625), with median $A_{\mathrm{lb}}/|TE| = 0.725$ (Figure\textasciitilde{}\ref{fig:nonadditivity}). The largest ratios occurred in kidney JUN-linked pairs. These findings provide preliminary evidence suggesting non-additivity rather than systematic proof, and should be interpreted cautiously given the limited sample size.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.45\textwidth]{figures/fig1_real_residual_nonadditivity.png}
+\caption{\textbf{Non-additivity in mediation analysis.} Absolute total effect, residual non-additivity, and lower-bound interaction magnitude per run-pair.}
+\label{fig:nonadditivity}
+\end{figure}
+
+Ranking certificates proved fragile: mean certified pair coverage dropped from 0.0669 at $\lambda = 1$ to 0.0032 by $\lambda \geq 3$ (Figure\textasciitilde{}\ref{fig:ranking_cert}). Top-1 certification collapsed to 0.0 for $\lambda \geq 1.5$.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.45\textwidth]{figures/fig2_ranking_sensitivity.png}
+\caption{\textbf{Ranking certificate fragility.} Mean certified pair fraction versus structural multiplier $\lambda$.}
+\label{fig:ranking_cert}
+\end{figure}
+
+\textbf{Inference.} Our preliminary data suggest that non-additivity may be common (62.5\% of run-pairs in this small sample), and appears to concentrate in biologically meaningful contexts. However, with only 16 run-pairs tested across 3 tissues, our study lacks sufficient statistical power to definitively characterize the prevalence or distribution of non-additivity. These findings suggest that standard single-component rankings may be unreliable in contexts with complex regulatory interactions, but larger-scale studies are needed to establish the generalizability of this pattern.
+
+\textbf{Biological interpretation.} The prevalence of higher-order interactions reflects combinatorial gene regulation: TFs operate in complexes, share co-factors, and exhibit cooperative binding \citep{sachs2005causal}. Ironically, the better a model represents regulatory complexity, the more biased single-component mediation becomes.
+
+\textbf{Decision implication.} Mechanistic claims should be accompanied by the residual non-additivity ratio $A_{\mathrm{lb}}/|TE|$, ranking certificates, and interaction-aware alternatives such as Shapley-value decomposition \citep{shapley1953value,lundberg2017unified}. Our findings would be strengthened by synthetic experiments with known additive versus non-additive component interaction structures, which would provide positive controls for distinguishing genuine non-additivity from measurement artifacts. Such controlled experiments could definitively establish whether the observed non-additivity reflects biological regulatory complexity or limitations in our mediation analysis framework.
+
+
+\subsection{Detectability Phase Diagrams Reveal Conditional Advantages \textnormal{[ATTN]}}
+\label{sec:detectability}
+
+\textbf{Evidence.} Under sub-Gaussian baseline conditions, intervention-like signals required only 44.4\% as many cells as attention-like signals for equivalent detectability (Figure\textasciitilde{}\ref{fig:phase_diagram}). However, this advantage collapsed progressively under tail inflation, with the relative cell ratio approaching unity when $\tau > 3$.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.45\textwidth]{figures/fig_phase_diagram_regimes.png}
+\caption{\textbf{Detectability phase diagrams.} Different regimes where attention-like versus intervention-like signals become detectable. The advantage of intervention-like signals collapses under severe tail inflation.}
+\label{fig:phase_diagram}
+\end{figure}
+
+Robust estimation (median-based or Huber M-estimators \citep{huber1964robust}) expanded the feasible detection region by 37\% under 10\% contamination. Real-data calibration showed projected relative cell ratios below one in most bootstrap draws, but confidence intervals remained wide (Figure\textasciitilde{}\ref{fig:real_calibration}).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.45\textwidth]{figures/fig_real_data_projection.png}
+\caption{\textbf{Real data detectability calibration.} Bootstrap distribution of projected relative cell requirements.}
+\label{fig:real_calibration}
+\end{figure}
+
+\textbf{Inference.} The detectability advantage of intervention-like signals is real but conditional---universal claims that ``patching is always better than attention'' are not supported.
+
+\textbf{Decision implication.} Researchers should compute sample complexity estimates (Equation\textasciitilde{}\ref{eq:sample_complexity}) before beginning mechanistic analysis as a practical pre-registration tool.
+
+
+\subsection{Limited Cross-Context Edge Consistency via Mediation \textnormal{[ATTN]}}
+\label{sec:cross_tissue}
+
+\textbf{Evidence.} Cross-tissue analysis across immune, kidney, and lung tissues revealed Spearman correlations ranging from $-0.44$ to $0.71$, with only two of six pair-granularity comparisons surviving FDR control at $\alpha = 0.05$ (Figure\textasciitilde{}\ref{fig:cross_tissue}).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.45\textwidth]{figures/fig3_cross_tissue_scatter.png}
+\caption{\textbf{Cross-tissue consistency variability.} Scatter plots of component-level effects between tissue pairs.}
+\label{fig:cross_tissue}
+\end{figure}
+
+\textbf{Inference.} Limited transferability is consistent with known tissue-specificity of gene regulation. Negative correlations in some tissue pairs suggest either genuine context-dependent regulation or tissue-specific confounds.
+
+\textbf{Alternative explanation.} Technical batch effects between tissue datasets (different protocols, dropout rates, sequencing depths) could explain low consistency rather than genuine regulatory differences. Our batch leakage analysis (Section\textasciitilde{}\ref{sec:batch}) supports this plausibility.
+
+\textbf{Decision implication.} Mechanistic claims should specify the biological context and should not be generalized without explicit cross-context validation.
+
+
+\subsection{Condition-Specific Perturbation Validation \textnormal{[ATTN]}}
+\label{sec:perturbation}
+
+\textbf{Evidence.} Counterfactual validation against four CRISPR perturbation datasets revealed condition-specific alignment. Dixit 13-day showed positive rank consistency ($\rho = 0.269$, $p_{\text{raw}} = 0.032$) that was retained under confound adjustment ($\rho = 0.199$, $p_{\text{raw}} = 0.020$), representing a small-to-medium effect size. Dixit 7-day showed weaker non-significant consistency ($\rho = 0.112$, $p = 0.15$). Adamson showed marginal agreement that did not survive confound adjustment. Shifrut showed raw anti-alignment ($\rho = -0.325$) that collapsed after confound adjustment ($\rho = 0.004$), indicating the initial negative correlation was driven by confounds rather than model behavior. No results survived Benjamini--Hochberg correction across all 47 framework-level tests ($q_{\text{BH}} > 0.05$ for all perturbation comparisons).
+
+\textbf{Statistical power limitations.} The failure to survive multiple-testing correction reflects both the modest effect sizes (Cohen's $d \approx 0.3$--$0.5$) and the stringent correction across 47 tests. A post-hoc power analysis indicates that detecting $\rho = 0.20$ at $\alpha_{\text{corrected}} = 0.001$ (approximate Bonferroni threshold for 47 tests) with 80\% power would require $n \approx 300$ perturbation targets per dataset, far exceeding the 10--86 targets available in current Perturb-seq experiments. The Dixit 13-day result ($\rho = 0.199$, $p = 0.020$ after confound adjustment) represents the strongest individual signal; while exploratory, it demonstrates that \emph{some} perturbation-consistent information exists in scGPT's counterfactual predictions, albeit at effect sizes too small to survive stringent correction with current sample sizes. Validation on larger-scale perturbation atlases (e.g., Replogle et al.\ 2022, $>$9,000 targets) would provide adequate power to resolve whether this signal is genuine.
+
+\textbf{Inference.} Condition-specificity parallels limited cross-tissue consistency, reinforcing that mechanistic interpretations are context-dependent. The perturbation results are best interpreted as providing weak, exploratory evidence of alignment rather than validated causal claims.
+
+\textbf{Decision implication.} Perturbation validation should be considered necessary but not sufficient. The current evidence suggests that perturbation consistency is detectable but weak; larger-scale perturbation experiments are needed to determine whether this reflects genuine causal signal or residual confounding.
+
+
+\subsection{Cross-Species Ortholog Transfer \textnormal{[CORR]}}
+\label{sec:ortholog}
+
+\textbf{Methodological note:} This analysis uses correlation-based edge scores to establish boundary conditions for cross-species transfer that any edge-scoring method must contend with.
+
+To test whether mechanistic signals generalize across species, we performed a systematic stress test of TF--target edge transfer between human and mouse lung using correlation-based edge scores computed independently in each species \citep{travaglini2020molecular}.
+
+\textbf{Evidence.} Cross-species comparison of 25,876 matched TF--target edges revealed strong global conservation (Figure\textasciitilde{}\ref{fig:ortholog_scatter}). The Spearman rank correlation between human and mouse edge scores was $\rho = 0.743$ ($p < 10^{-300}$), vastly exceeding the permutation null (mean null $\rho = 0.011 \pm 0.008$, $z = 92.6$, empirical $p < 0.001$). Sign agreement was 88.6\% across all shared edges, rising to 100\% for edges with $|\rho| > 0.4$ in both species. Top-$k$ overlap was enriched 8- to 484-fold over random expectation (Table\textasciitilde{}\ref{tab:topk_ortholog}).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.45\textwidth]{figures/fig_ortholog_scatter.png}
+\caption{\textbf{Cross-species edge score conservation.} Scatter plot of Spearman $\rho$ for 25,876 matched TF--target edges between human and mouse lung, showing strong global conservation ($\rho = 0.743$).}
+\label{fig:ortholog_scatter}
+\end{figure}
+
+\begin{table}[t]
+\centering
+\caption{Top-$k$ overlap between human and mouse edge rankings.}
+\label{tab:topk_ortholog}
+\begin{tabular}{rrrr}
+\toprule
+Top $k$ & Observed & Expected & Fold \\
+\midrule
+100   & 26   & 0.1   & 484$\times$ \\
+500   & 153  & 1.3   & 114$\times$ \\
+1,000 & 289  & 5.4   & 54$\times$ \\
+5,000 & 1,094 & 134.2 & 8.2$\times$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+However, per-TF conservation was highly non-uniform (Figure\textasciitilde{}\ref{fig:ortholog_per_tf}). Lineage-specifying factors showed near-perfect transfer: XBP1 ($\rho = 0.90$), EPAS1 (0.89), ERG (0.88), NKX2-1 (0.81). In contrast, signaling-responsive TFs showed poor conservation: CTNNB1 (0.01), HIF1A (0.10), STAT1 (0.06), CEBPB (0.13). The top conserved edges were overwhelmingly NKX2-1 targets representing the core lung epithelial gene program (SLC34A2, EPCAM, GPRC5A, MUC1). Fragile edges (599 total) were enriched for immune-cell-specific RUNX3 targets with species-divergent expression driven by differential cell-type composition between datasets.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.45\textwidth]{figures/fig_ortholog_per_tf.png}
+\caption{\textbf{Per-TF conservation variability.} Spearman $\rho$ for each TF's target set, ranging from $-0.12$ (MAX) to $0.90$ (XBP1). Lineage-specifying TFs (right) transfer well; signaling-responsive TFs (left) do not.}
+\label{fig:ortholog_per_tf}
+\end{figure}
+
+\textbf{Inference.} Cross-species edge conservation is strong globally, validating the broad practice of ortholog-based network comparison. However, conservation is governed by a clear biological axis: lineage-specifying TF programs (NKX2-1 for epithelial, ERG for endothelial, RUNX3 for cytotoxic lymphocytes) transfer reliably, while signaling-responsive programs (HIF1A, STAT1, CTNNB1) do not. The non-uniformity implies that blanket ortholog transfer without TF-level quality control will mix high-confidence conserved edges with unreliable ones.
+
+\textbf{Biological interpretation.} Lineage-specifying TFs define stable cell identities under conserved selective pressure, producing constitutive regulatory relationships that are preserved across mammals. Signaling-responsive TFs depend on extracellular context (hypoxia for HIF1A, interferon for STAT1, Wnt for CTNNB1) that differs between datasets and species. A third factor is differential cell-type composition: fragile edges involving RUNX3 cytotoxic targets reflect higher NK cell proportions in the mouse dataset (13\% vs.\ $<$3\% in human). Anti-conserved edges (2,535) are predominantly driven by cell-type composition artifacts rather than true regulatory divergence.
+
+\textbf{Decision implication.} Ortholog-based edge transfer should be stratified by TF class: lineage-specifying programs can be transferred with high confidence, while signaling-responsive and composition-dependent edges require species-specific validation. Cell-type proportions should be matched or controlled before cross-species comparison.
+
+
+\subsection{Pseudotime Directionality \textnormal{[CORR]}}
+\label{sec:pseudotime}
+
+\textbf{Methodological note:} This analysis uses correlation-based edge scores to test whether pseudotime validation is viable for any edge-scoring method.
+
+A fundamental assumption underlying regulatory edge inference is that TF activity changes should precede downstream target expression changes. We tested this assumption using diffusion pseudotime as a temporal proxy across three immune lineages \citep{haghverdi2016diffusion}.
+
+\textbf{Evidence.} Despite biologically reasonable pseudotime ordering across both developmental systems, only 31 of 144 TF--target pairs (21.5\%) exhibited lag-based directional consistency---TF peaking before target at optimal correlation lag (Figure\textasciitilde{}\ref{fig:pseudotime_failure}). The immune system showed 22.8\% directional consistency (26 of 114 pairs), while the independent hematopoietic validation achieved 25.3\% consistency (19 of 75 pairs analyzed), confirming that the low validation rate generalizes across developmental contexts. The dominant failure mode was simultaneous expression (59.1\% of inconsistent pairs), followed by target-leads-TF violations (31.8\%). Zero-lag correlations dominated: the majority of pairs had peak or near-peak correlation at lag zero across both systems.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.45\textwidth]{figures/fig_pseudotime_failure.png}
+\caption{\textbf{Pseudotime directionality failure.} (A)\textasciitilde{}Overall directional consistency rate (21.4\%). (B)\textasciitilde{}Failure mode breakdown showing simultaneous expression dominates. (C)\textasciitilde{}Peak lag vs.\ peak correlation for all 56 pairs.}
+\label{fig:pseudotime_failure}
+\end{figure}
+
+Consistency varied by lineage and developmental system: in immune development, myeloid pairs showed the highest rate (6/17, 35.3\%), followed by T\textasciitilde{}cell (4/24, 16.7\%) and B\textasciitilde{}cell (2/15, 13.3\%). In hematopoietic development, granulocyte differentiation showed 28.6% consistency (6/21), monocyte/DC showed 26.7% (4/15), and erythroid/megakaryocyte showed 18.9% (7/37). The mean directionality score across all 144 pairs was 0.013, marginally exceeding the shuffled-pseudotime null ($p_{\text{raw}} = 0.064$, Cohen's $d = 1.62$) but not the random gene-pair null ($p_{\text{raw}} = 0.35$) (Figure\textasciitilde{}\ref{fig:pseudotime_nulls}). After framework-level FDR correction across all 47 statistical tests in this study, the adjusted value is $q = 0.118$, indicating no significant evidence for directional consistency.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.45\textwidth]{figures/fig_pseudotime_nulls.png}
+\caption{\textbf{Pseudotime directionality null models.} (A)\textasciitilde{}Directionality score by lineage. (B)\textasciitilde{}Observed mean vs.\ shuffled-pseudotime null. (C)\textasciitilde{}Observed mean vs.\ random gene-pair null.}
+\label{fig:pseudotime_nulls}
+\end{figure}
+
+\textbf{Inference.} Pseudotime fails to recover expected temporal ordering for $\sim$79\% of well-characterized regulatory pairs. The pseudotime directionality analysis yields a null finding: after framework-level FDR correction, there is no statistically significant evidence that known regulatory relationships exhibit expected temporal ordering along pseudotime trajectories ($q = 0.124$). This null result represents valuable negative evidence rather than a trend toward significance---the analysis was underpowered and inconclusive for this sample size and biological context. The low consistency rate should not be interpreted as evidence against these regulatory relationships---they are well-established---but rather reflects fundamental limitations of pseudotime as a temporal proxy. The dominance of zero-lag correlations indicates that regulatory events occur faster than pseudotime resolution can capture, or that TF--target pairs are co-regulated by shared upstream signals.
+
+\textbf{Biological interpretation.} The lineage-dependent performance is informative: the myeloid monocyte-to-macrophage transition is relatively linear and involves sustained transcriptional reprogramming, producing the highest consistency (35.3\%). The T\textasciitilde{}cell lineage has branching topology (Th1, Th2, Th17, Treg) poorly captured by a single pseudotime axis (16.7\%). The B\textasciitilde{}cell lineage suffers from a sharp B-to-plasma cell transition creating bimodal expression patterns (13.3\%). Consistent pairs---TBX21$\to$IFNG (Th1 differentiation, lag $+4$), BCL6$\dashv$PRDM1 (GC B cell repression, lag $+9$), SPI1$\to$CSF1R (myeloid differentiation, lag $+9$)---involve well-characterized, slow developmental programs spanning broad pseudotime ranges.
+
+\textbf{Decision implication.} Pseudotime should not be used as the sole temporal validator for mechanistic edges. Zero-lag correlation is expected and does not constitute evidence against regulation. Perturbation-based validation and RNA velocity provide complementary temporal information. Multi-modal approaches combining pseudotime with splicing dynamics may improve temporal resolution.
+
+
+\subsection{Batch and Donor Leakage \textnormal{[CORR]}}
+\label{sec:batch}
+
+\textbf{Methodological note:} This analysis uses correlation-based edge scores to establish baseline levels of technical artifact leakage that any edge-scoring method must address.
+
+If TF--target edge scores encode donor or batch identity rather than shared regulatory logic, then apparent generalization may reflect exploitation of technical structure. We conducted a systematic leakage audit across three tissue compartments. The kidney compartment includes only a single donor, preventing assessment of donor-level generalization in this tissue context.
+
+\textbf{Evidence.} Leakage classifiers revealed substantial technical signal in edge-product features (Figure\textasciitilde{}\ref{fig:batch_leakage}). Donor identity was recoverable well above chance: immune dataset AUC 0.85--0.87 (21 donors, chance balanced accuracy 0.048); lung dataset AUC 0.94--0.96 (4 donors, chance 0.25). Assay method (10X vs.\ Smart-seq2) was the dominant confound, recoverable at AUC 0.96--0.99 across all tissues.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.45\textwidth]{figures/fig_batch_leakage_summary.png}
+\caption{\textbf{Cross-dataset leakage summary.} Balanced accuracy and AUC for donor, batch, and method classification from edge-product features across tissues.}
+\label{fig:batch_leakage}
+\end{figure}
+
+However, the practical impact was dataset-dependent. The well-balanced lung dataset showed remarkably stable aggregate edge scores under donor-balanced resampling ($r = 0.997$, 10.1\% blacklisted). The imbalanced immune dataset showed genuine instability ($r = 0.929$, 54.6\% blacklisted, 17.1\% sign-flipped) (Figure\textasciitilde{}\ref{fig:batch_asi}). Leave-one-donor-out analysis confirmed that LODO-unstable edges concentrate on stress-response TFs (FOS, JUN) paired with stromal markers, suggesting donor-specific microenvironment variation. A cross-donor generalization test in the lung dataset revealed a 6.6 percentage point gap between within-study cross-validation (0.553) and cross-donor evaluation (0.487), indicating that standard CV overestimates generalization.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.45\textwidth]{figures/fig_batch_asi_distribution.png}
+\caption{\textbf{Artifact Sensitivity Index distribution.} Immune tissue (shown) has 54.6\% of edges exceeding ASI $> 0.5$ (dashed line), reflecting extreme donor imbalance.}
+\label{fig:batch_asi}
+\end{figure}
+
+\textbf{Inference.} Edge features carry non-trivial donor and batch information, but the severity depends on dataset balance. Much of the apparent donor leakage arises from differential cell-type composition (Cram\'er's $V = 0.20$--$0.44$)---a biological confound---rather than purely technical bias. Well-balanced datasets show remarkably stable edge scores despite high classifier leakage, because leakage exploits per-cell differences while aggregate correlations average over them.
+
+\textbf{Biological interpretation.} The concentration of LODO-unstable edges on stress-response TFs (FOS, JUN) paired with stromal markers (FN1, VWF, CDH5) reflects genuine donor-specific variation in tissue microenvironment and inflammatory state rather than systematic technical artifacts. The 10X vs.\ Smart-seq2 confound reflects fundamentally different gene detection sensitivities and dropout rates.
+
+\textbf{Decision implication.} Edge score evaluation must use donor-stratified splits, never random CV when donor metadata is available. The generalization gap (cross-donor minus within-study accuracy) should be reported as a built-in quality check. Edges with high ASI or LODO variance should be flagged or removed. Mixed-protocol edge scores should be interpreted with extreme caution. For imbalanced datasets, donor-balanced resampling or weighted correlations are essential.
+
+
+\subsection{Uncertainty Calibration \textnormal{[CORR]}}
+\label{sec:calibration}
+
+GRN inference methods produce continuous edge scores that are routinely thresholded, but a critical question is whether these scores have a probabilistic interpretation.
+
+\textbf{Evidence.} All six edge-scoring methods produced severely miscalibrated scores against Perturb-seq ground truth: raw Expected Calibration Error (ECE) ranged from 0.269 (ensemble) to 0.469 (LASSO) (Figure\textasciitilde{}\ref{fig:calibration_reliability}). Reliability diagrams showed systematic deviation from the diagonal, with correlation-based methods compressing scores into a narrow range far from true positive rates.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.45\textwidth]{figures/fig_calibration_reliability.png}
+\caption{\textbf{Edge score calibration.} Reliability diagrams showing fraction of true positives vs.\ mean predicted probability. Left: raw scores are severely miscalibrated. Center/Right: Platt scaling and isotonic regression reduce ECE by 4--7$\times$.}
+\label{fig:calibration_reliability}
+\end{figure}
+
+Post-hoc calibration dramatically improved score quality: isotonic regression reduced ECE to 0.062--0.079 (4--7$\times$ reduction) without changing discrimination (AUROC invariant). Mutual information and ensemble methods achieved the best calibrated performance (ECE $= 0.062$, AUROC $= 0.618$--$0.619$). Bootstrap stability analysis (200 resamples) confirmed robustness (95\% CI width $< 0.02$).
+
+Split conformal prediction sets achieved valid marginal coverage ($\geq$95\%) for mutual information and ensemble methods at $\alpha = 0.05$, with 13.4\% singleton prediction sets for mutual information---edges for which the method makes a definitive call while maintaining coverage (Figure\textasciitilde{}\ref{fig:calibration_conformal}). LASSO conformal sets were trivially valid (set size $\approx 2.0$), reflecting its inability to discriminate.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.45\textwidth]{figures/fig_calibration_conformal.png}
+\caption{\textbf{Conformal prediction sets.} Empirical coverage and average set size across methods at $\alpha = 0.05$, $0.10$, $0.20$. Mutual information and ensemble yield the smallest informative sets.}
+\label{fig:calibration_conformal}
+\end{figure}
+
+Critically, calibrators did not transfer across datasets: K562-trained calibrators applied to the Shifrut T\textasciitilde{}cell dataset yielded ECE 0.320--0.424, compared to 0.002--0.031 for locally trained calibrators. This reflects fundamental differences in cell type, perturbation technology, and gene sets between contexts.
+
+\textbf{Inference.} Edge scores from standard GRN methods are useful for ranking but cannot be interpreted as probabilities. The mapping from scores to probabilities is highly nonlinear and method-specific. However, post-hoc calibration is computationally trivial and effective, reducing miscalibration by 4--7$\times$. The non-transferability of calibrators parallels the context-dependence observed in cross-tissue (Section\textasciitilde{}\ref{sec:cross_tissue}) and perturbation (Section\textasciitilde{}\ref{sec:perturbation}) analyses.
+
+\textbf{Biological interpretation.} The superior calibration of mutual information and ensemble methods over simple correlations reflects their better capture of nonlinear regulatory relationships. The dataset-specific nature of calibration mappings implies that the quantitative relationship between co-expression strength and regulatory probability varies across biological contexts---consistent with context-dependent regulation.
+
+\textbf{Decision implication.} GRN methods should report calibrated scores alongside traditional rankings. Conformal prediction sets transform the question from ``which edges to call'' into ``which edges can be confidently called and which remain ambiguous.'' Calibrators must be retrained on each new dataset using a modest held-out perturbation set. Any analysis treating edge scores as probabilities (Bayesian integration, decision-theoretic thresholding, uncertainty quantification) requires prior calibration.
+
+
+% [CSSI Results section moved to Core Finding 2 above]
+
+% [CSSI continuation moved to Core Finding 2 above]
+
+
+\subsection{Synthetic Ground-Truth Internal Consistency Checks \textnormal{[ATTN]}}
+\label{sec:synthetic_validation}
+
+Controlled synthetic experiments (Section\textasciitilde{}\ref{sec:methods_synthetic}) confirmed three theoretical predictions (Figure\textasciitilde{}\ref{fig:synthetic_validation}): (i) attention-based GRN recovery degraded with cell count ($r = 0.847$ at 200 cells to $r = 0.623$ at 2,000), correlating with heterogeneity ($r = -0.94$); (ii) Shapley values outperformed single-component estimates by 91\% ($\rho = 0.789$ vs.\ $0.412$); (iii) empirical detectability matched theoretical predictions ($r = 0.887$, $p < 10^{-6}$). These confirm internal consistency of our framework, though the synthetic generator encodes assumptions aligned with our predictions; real-data validation (Sections~\ref{sec:cssi_results}--\ref{sec:cross_tissue_replication}) provides the stronger evidence.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.45\textwidth]{figures/synthetic_validation_summary.png}
+\caption{\textbf{Synthetic validation.} (A) GRN recovery degrades with cell count. (B) Shapley values outperform single-component estimates. (C--D) Empirical detectability matches theory.}
+\label{fig:synthetic_validation}
+\end{figure}
+
+
+% [Multi-model validation, cross-tissue replication, and co-expression sections moved to Core Findings above]
+
+
+\section{Discussion}
+
+\subsection{Three Core Contributions in Context}
+
+Our framework yields three interconnected findings that reshape the understanding of attention-based mechanistic interpretability in single-cell foundation models.
+
+\textbf{The co-expression--regulation dissociation} (Section~\ref{sec:coexp_regulation}) is the central mechanistic insight. Attention weights in both scGPT and Geneformer encode gene co-occurrence ($\rho = 0.31$--$0.42$) rather than regulatory relationships ($\rho \approx 0$). This explains why naive unstratified inference yields near-random GRN recovery across architectures, and why dedicated GRN methods (GENIE3, GRNBoost2) achieve identical near-random performance on the same data (Section~\ref{sec:baseline_comparison})---the challenge is intrinsic to regulatory signal recovery from heterogeneous tissue, not attention-specific.
+
+\textbf{Layer-stratified analysis via CSSI} (Section~\ref{sec:cssi_results}) provides the diagnostic contribution. In scGPT-18L, benchmark-discriminative signal progressively separates from co-expression across depth, with later layers (L13--L14) achieving AUROC 0.694--0.706---substantially above the pooled baseline of 0.543. CSSI's value is diagnostic: identifying which layers concentrate benchmark-discriminative signal rather than uniformly boosting performance. The architecture-specificity of this pattern---scGPT-12L distributes signal uniformly, consistent with expression-level confounding---underscores that layer selection must be performed per model.
+
+\textbf{Cross-tissue evaluation} (Section~\ref{sec:cross_tissue_replication}) demonstrates the central cautionary finding. The uniform per-layer AUROC across tissues ($\sim$0.72 TRRUST, $\sim$0.84 DoRothEA) and layers is not evidence of robust regulatory learning but of a degenerate evaluation design: curated benchmarks are enriched for prominent genes, and gene-level null models (expression and variance products) match or exceed attention-based performance. The uniformity itself is the diagnostic---biology would produce tissue-specific and layer-specific variation, while gene-level confounding produces exactly the invariance observed.
+
+\textbf{Expression-matched evaluation} resolves the resulting ambiguity. When negatives are matched on actual gene expression statistics (mean expression and detection rate, $\pm$20\% tolerance, 50 per positive), expression-product baselines score near chance (AUROC = 0.522) while attention retains AUROC = 0.646 (95\% CI: [0.539, 0.747]; best head: 0.662). This $\sim$12-percentage-point gap constitutes direct evidence that attention encodes genuine pairwise structure beyond gene-level statistics---though the wide CI (reflecting only 27 positive edges) and modest absolute magnitude indicate that the bulk of the unmatched AUROC ($\sim$0.72) is indeed driven by expression confounds rather than regulatory encoding.
+
+Together, these findings establish a nuanced picture: attention AUROC on curated benchmarks is predominantly driven by benchmark enrichment for prominent genes, but a genuine pairwise signal persists when marginal confounds are controlled. CSSI provides a diagnostic for where benchmark-discriminative signal resides, and expression-matched evaluation provides the critical test for distinguishing confound-driven from genuine regulatory signal.
+
+\textbf{Reconciling the co-expression finding with per-layer AUROC.} An apparent tension exists between Finding~1 (pooled attention is dominated by co-expression; $\rho \approx 0$ with TRRUST) and Finding~3 (per-layer attention achieves AUROC $\sim$0.72 against TRRUST). Our null-model analysis resolves this tension: the $\sim$0.72 AUROC is achievable by simple gene-level statistics (variance and expression products score $\geq$0.75), demonstrating that it reflects gene prominence in curated databases rather than learned regulation. The key differences between Findings~1 and~3 remain methodological---models, gene vocabularies, edge counts, and metrics all differ---but the per-layer AUROC does not exceed what expression statistics alone predict. This finding reinforces rather than contradicts the co-expression dominance conclusion. CSSI's value lies in its diagnostic capacity---identifying where benchmark-discriminative signal concentrates across model components---not in demonstrating regulatory recovery.
+
+\textbf{Framework-Level Multiple Testing Correction.} All 47 statistical tests across the twelve analyses are corrected using Benjamini-Hochberg FDR at $\alpha = 0.05$ (Section~\ref{sec:methods_correction}). Key findings survive correction: scaling failure ($q = 0.011$), mediation non-additivity ($q = 0.003$), and cross-species conservation ($q = 0.001$). Pseudotime directionality ($q = 0.124$) does not survive correction.
+
+\subsection{Supporting Analyses: Quality Control and Boundary Conditions}
+
+The nine supporting analyses provide essential context. The scaling plateau (Section~\ref{sec:scaling}) establishes the practical threshold of approximately 150--300 cells. Cross-species transfer (Section~\ref{sec:ortholog}) shows strong global conservation ($\rho = 0.743$) but TF-class-dependent fragility. The pseudotime audit (Section~\ref{sec:pseudotime}) establishes that temporal validation is underpowered for current sample sizes. Batch leakage (Section~\ref{sec:batch}) motivates donor-stratified evaluation. Calibration (Section~\ref{sec:calibration}) shows edge scores require post-hoc correction for probabilistic interpretation. These collectively define boundary conditions for reliable interpretation.
+
+\subsection{Relationship to Prior Work}
+
+Our findings connect to several threads in the broader literature. The attention-as-explanation debate in NLP \citep{jain2019attention,wiegreffe2019attention,bibal2022attention} established that attention weights do not reliably indicate feature importance. Our results extend this to biological models using attention-derived edge scores. The cross-species conservation analysis connects to comparative regulatory genomics \citep{breschi2017comparative,cardosomoreira2019gene}, extending beyond bulk expression to single-cell edge-level comparisons. The calibration analysis bridges the well-developed calibration literature in machine learning \citep{platt1999probabilistic,niculescumizil2005predicting,guo2017calibration} with GRN inference, where uncertainty quantification has been underexplored \citep{pratapa2020benchmarking}. The conformal prediction framework \citep{vovk2005algorithmic} provides distribution-free guarantees previously unapplied to regulatory network inference.
+
+\subsection{Recommendations for Practice}
+
+Based on our findings, we recommend:
+
+\begin{enumerate}
+  \item \textbf{Test for scaling plateau or decline} on your specific architecture. If degradation is observed, apply CSSI stratification before edge scoring.
+  \item \textbf{Report non-additivity.} Compute $A_{\mathrm{lb}}/|TE|$ for any activation patching analysis.
+  \item \textbf{Assess detectability.} Use sample complexity estimates to determine adequate power.
+  \item \textbf{Validate across contexts.} Test across at least two biological contexts.
+  \item \textbf{Include perturbation validation} with confound adjustment and multiple-testing correction.
+  \item \textbf{Stratify ortholog transfer by TF class.} Lineage-specifying programs transfer reliably; signaling-responsive programs require species-specific validation.
+  \item \textbf{Do not rely on pseudotime as sole temporal validator.} Use perturbation data or RNA velocity as complementary evidence.
+  \item \textbf{Use donor-stratified evaluation.} Report the generalization gap and filter high-ASI edges.
+  \item \textbf{Calibrate edge scores.} Report calibrated probabilities and conformal prediction sets alongside rankings. Retrain calibrators per dataset.
+  \item \textbf{Include dedicated GRN baselines.} Our baseline comparison (Section\textasciitilde{}\ref{sec:baseline_comparison}) shows that poor attention performance may reflect tissue-specific challenges rather than method failure, as GENIE3 and GRNBoost2 achieve identical near-random AUROC. While this does not exonerate attention methods, it emphasizes that the computational efficiency of attention extraction (0.1s vs. 89--127s) provides practical value when discriminative power is equivalent. Established methods (SCENIC, GENIE3, GRNBoost2, CellOracle) remain appropriate for dedicated GRN reconstruction, while foundation models excel at cell-type annotation, embedding-based analysis, and perturbation prediction.
+\end{enumerate}
+
+\subsection{A Path Forward}
+
+Our results should not be read as a dismissal of single-cell foundation models, but as a call for methodological honesty about what attention-derived edge scores can and cannot reveal. Three directions are most promising. \emph{First}, intervention-aware pretraining: training foundation models on perturbation data (e.g., Perturb-seq atlases\textasciitilde{}\citep{replogle2022mapping}) could embed causal rather than correlational structure into attention patterns. \emph{Second}, hybrid architectures that use foundation model embeddings as inputs to purpose-built GRN inference modules (e.g., graph neural networks constrained by known regulatory priors) could combine the representational power of foundation models with the inductive biases needed for causal inference. \emph{Third}, CSSI-enhanced interpretability pipelines that stratify cells before any mechanistic analysis, combined with Shapley-value-based component ranking and conformal prediction sets, provide an immediately deployable diagnostic framework---though any claims derived from such pipelines must first demonstrate performance above expression-matched baselines before invoking regulatory structure.
+
+\subsection{External Validation and Generalization}
+
+A key limitation of the present work is the reliance on a small number of datasets---primarily Tabula Sapiens for expression analyses and Dixit/Adamson/Shifrut for perturbation validation. While our findings are internally consistent across these datasets, independent external validation on held-out cohorts is essential to establish generality. We are currently planning validation on the Replogle et al.\ (2022) genome-scale CRISPRi atlas\textasciitilde{}\citep{replogle2022mapping}, which provides perturbation outcomes for $>$9,000 genes in K562 cells and represents the most comprehensive single-cell perturbation resource available. This dataset would enable: (i) testing CSSI on real foundation model attention weights at scale, (ii) evaluating calibration transfer across perturbation technologies (CRISPRi vs.\ CRISPRa), and (iii) assessing whether the scaling failure and its CSSI correction generalize to genome-scale gene sets beyond the $\sim$2,000 HVG regime used here. Until such external validation is complete, we recommend that practitioners treat our quantitative thresholds (e.g., the 1.85$\times$ CSSI improvement factor) as estimates from specific experimental conditions rather than universal constants. Cross-tissue evaluation using scGPT-12L (Section~\ref{sec:cross_tissue_replication}) demonstrates consistent per-layer AUROC ($\sim$0.72 TRRUST, $\sim$0.84 DoRothEA) across brain, kidney, and whole-human tissues, though null-model analysis shows this level of performance is achievable from gene-level expression statistics alone.
+
+\subsection{Limitations}
+
+\textbf{Missing positive controls.} Our largely negative findings lack positive controls that would strengthen interpretation. Ideal controls would include time-course perturbation data (pseudotime), constitutive vs.\ tissue-specific edge annotations (cross-tissue), attention-aware synthetic generators (scaling), and validated regulatory rewiring events (ortholog transfer). Their absence means negative findings could reflect either genuine limitations or inadequate experimental designs, highlighting the need for purpose-built validation datasets.
+
+\textbf{Reference database circularity.} TRRUST and DoRothEA include interactions originally discovered through co-expression or motif analyses, creating potential circularity when validated with correlation-based methods. This affects both correlation-based and attention-based approaches (since attention correlates with co-expression). The problem is acute for cross-tissue and cross-species comparisons, where databases may be biased toward conserved, constitutive relationships. Complementary validation via perturbation experiments and orthogonal databases is needed.
+
+\textbf{Sample size limitations.} Several analyses are constrained by small sample sizes: pseudotime evaluates 144 TF-target pairs (adequate power for medium effects but limited to 2 developmental systems), ortholog transfer covers one tissue/species pair, perturbation validation uses 3--4 datasets from specific cell lines, and batch leakage includes only 1 donor for kidney. Qualitative trends are likely robust, but specific effect sizes should be validated on larger datasets.
+
+Additional architectures (scFoundation \citep{hao2024largescale}) remain to be tested. The ortholog transfer, pseudotime, and batch leakage analyses use correlation-based rather than attention-derived edges, establishing boundary conditions for any edge-scoring method but not directly testing foundation model attention. The calibration analysis uses Perturb-seq ground truth with a 45.8\% positive rate that may exceed true regulatory network sparsity. Extension to additional tissues, species, perturbation atlases \citep{replogle2022mapping}, and architectures is needed.
+
+
+\section{Conclusions}
+
+We present a systematic framework for mechanistic interpretability of single-cell foundation models, organized around three core contributions. First, we demonstrate that pooled attention edges are dominated by co-expression ($\rho = 0.31$--$0.42$) rather than regulation ($\rho \approx 0$) across both scGPT and Geneformer, explaining persistent near-random GRN recovery (AUROC $\approx 0.5$) from unstratified approaches. Second, we introduce CSSI as a diagnostic framework for localizing benchmark-discriminative signal across layers---in scGPT-18L, later layers achieve AUROC 0.694--0.706, with up to 1.85$\times$ improvement in synthetic settings, though this elevated AUROC reflects gene-level prominence rather than regulatory recovery. Third, cross-tissue evaluation across brain, kidney, and whole-human data shows uniform per-layer AUROC ($\sim$0.72 TRRUST, $\sim$0.84 DoRothEA) across all layers and tissues, but gene-level null models (expression and variance products) match or exceed this performance, demonstrating that the bulk of benchmark AUROC reflects gene-level prominence rather than learned regulatory structure. Crucially, expression-matched negative sampling---controlling for exactly this confound---reveals that attention retains AUROC 0.646 (95\% CI: [0.539, 0.747]) against chance-level baselines (0.522), providing direct evidence that attention does encode genuine pairwise regulatory information, albeit at modest magnitude. Nine supporting analyses provide comprehensive quality control, revealing that scaling exhibits saturation around 150--300 cells, cross-species conservation is TF-class-dependent, pseudotime validation is underpowered, edge features leak technical covariates, and raw scores require calibration. These findings do not invalidate single-cell foundation models but establish boundary conditions for reliable interpretation and provide concrete diagnostic tools.
+
+
+\section*{Acknowledgments}
+
+We thank the scGPT development team for making their models publicly available, the Tabula Sapiens Consortium for open data access, and the broader single-cell foundation model community for establishing benchmark datasets and evaluation protocols.
+
+\section*{Data Availability}
+
+All analysis scripts, data processing pipelines, source data for all figures and tables, and reproducibility instructions are deposited at Zenodo (DOI: to be assigned upon acceptance; reviewer access available at [repository URL]) and in the supplementary materials. All primary datasets used (Tabula Sapiens, Dixit/Adamson/Shifrut Perturb-seq, Krasnow mouse lung) are publicly available from their original sources as cited.
+
+\section*{Code Availability}
+
+Complete analysis code, figure generation scripts, CSSI implementation, and computational environment specifications (including Conda environment files and Docker containers for full reproducibility) are available at \url{https://github.com/Biodyn-AI/sc-mechanistic-interpretability} (available for reviewer access; public release and Zenodo archival upon acceptance). The repository includes step-by-step instructions for reproducing all figures and tables from raw data, with expected runtimes documented per analysis.
+
+\section*{Competing Interests}
+
+The author declares no competing interests.
+
+\section*{Ethics Declaration}
+
+This study used only publicly available, de-identified single-cell transcriptomic datasets (Tabula Sapiens, Perturb-seq collections). No new human or animal data were generated. No ethical approval was required.
+
+\appendix
+\input{appendix_statistical_tests}
+
+\bibliography{references}
+
+\end{document}

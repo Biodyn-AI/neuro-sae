@@ -1,0 +1,62 @@
+=== CSSI Held-Out Validation Experiment ===
+Device: cuda
+Loading model...
+Model: 18L x 18H
+Loading data...
+Loading TRRUST...
+TRRUST: 8330 edges
+Tokenizing all cells...
+Total valid cells: 497
+Cell type distribution: Counter({'oligodendrocyte': 244, 'glutamatergic neuron': 106, 'GABAergic interneuron': 35, 'pvalb GABAergic cortical interneuron': 35, 'astrocyte': 35, 'oligodendrocyte precursor cell': 25, 'microglial cell': 17})
+
+============================================================
+HELD-OUT VALIDATION EXPERIMENT
+============================================================
+Creating stratified train/test split...
+Train set: 248 cells
+Test set: 249 cells
+Train cell types: Counter({'oligodendrocyte': 122, 'glutamatergic neuron': 53, 'GABAergic interneuron': 17, 'pvalb GABAergic cortical interneuron': 17, 'astrocyte': 17, 'oligodendrocyte precursor cell': 13, 'microglial cell': 9})
+Test cell types: Counter({'oligodendrocyte': 122, 'glutamatergic neuron': 53, 'pvalb GABAergic cortical interneuron': 18, 'astrocyte': 18, 'GABAergic interneuron': 18, 'oligodendrocyte precursor cell': 12, 'microglial cell': 8})
+
+==================================================
+SPLIT A: Train on first half, test on second half
+==================================================
+
+--- Analyzing SPLIT A - TRAIN ---
+  Processing Layer 10...
+    Pooled AUROC: 0.5905
+    Best CSSI (cssi_mean): 0.5950
+    Time: 15.1s
+  Processing Layer 12...
+    Pooled AUROC: 0.5986
+    Best CSSI (cssi_deviation): 0.5985
+    Time: 14.8s
+  Processing Layer 13...
+    Pooled AUROC: 0.6382
+    Best CSSI (cssi_deviation): 0.6381
+    Time: 15.8s
+  Processing Layer 14...
+    Pooled AUROC: 0.6372
+    Best CSSI (cssi_deviation): 0.6370
+    Time: 15.4s
+  Processing Layer 15...
+    Pooled AUROC: 0.6053
+    Best CSSI (cssi_deviation): 0.6052
+    Time: 14.7s
+  Processing Layer 16...
+    Pooled AUROC: 0.6503
+    Best CSSI (cssi_deviation): 0.6502
+    Time: 16.2s
+  Processing Layer 17...
+    Pooled AUROC: 0.6598
+    Best CSSI (cssi_deviation): 0.6597
+    Time: 15.4s
+
+Split A - Top layers identified from training: [17, 16, 13]
+Traceback (most recent call last):
+  File "/mnt/d/openclaw/biodyn-nmi-paper/cssi_real/held_out_validation.py", line 627, in <module>
+    main()
+  File "/mnt/d/openclaw/biodyn-nmi-paper/cssi_real/held_out_validation.py", line 420, in main
+    f"best_cssi={res['best_cssi_auroc']:.4f if res['best_cssi_auroc'] is not None else 'N/A'}")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: Invalid format specifier '.4f if res['best_cssi_auroc'] is not None else 'N/A'' for object of type 'float'

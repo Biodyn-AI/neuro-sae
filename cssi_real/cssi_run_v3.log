@@ -1,0 +1,110 @@
+Starting CSSI v3...
+Vocab: 20275
+Device: cuda
+Loading model...
+Model: 18L x 18H
+Loading data...
+Loading TRRUST...
+TRRUST: 8330 edges from 778 TFs
+
+============================================================
+n_cells = 200
+Sampled: 197
+Tokenizing...
+Valid: 197
+Extracting attention...
+  Attention: 100/197
+Attention done in 16.2s
+Building POOLED matrix (top-1000 genes)...
+POOLED matrix: (1000, 1000), 4.2s
+TRRUST edges in pooled genes: 18
+Building CSSI matrices...
+  pvalb GABAergic cortical interneuron: 14 cells
+  glutamatergic neuron: 42 cells
+  GABAergic interneuron: 14 cells
+  oligodendrocyte precursor cell: 10 cells
+  microglial cell: 6 cells
+  oligodendrocyte: 97 cells
+  astrocyte: 14 cells
+
+--- Results (n_cells=200) ---
+  POOLED: AUROC=0.5766 AUPRC=0.0000 (rand=0.0000) F1=0.0001 [17 pos / 999000 pairs]
+  CSSI-max: AUROC=0.5156 AUPRC=0.0000 (rand=0.0000) F1=0.0001 [17 pos / 999000 pairs]
+  CSSI-mean: AUROC=0.4695 AUPRC=0.0000 (rand=0.0000) F1=0.0001 [17 pos / 999000 pairs]
+
+============================================================
+n_cells = 500
+Sampled: 497
+Tokenizing...
+Valid: 497
+Extracting attention...
+  Attention: 100/497
+  Attention: 200/497
+  Attention: 300/497
+  Attention: 400/497
+Attention done in 26.5s
+Building POOLED matrix (top-1000 genes)...
+POOLED matrix: (1000, 1000), 10.5s
+TRRUST edges in pooled genes: 20
+Building CSSI matrices...
+  pvalb GABAergic cortical interneuron: 35 cells
+  glutamatergic neuron: 106 cells
+  GABAergic interneuron: 35 cells
+  oligodendrocyte precursor cell: 25 cells
+  microglial cell: 17 cells
+  oligodendrocyte: 244 cells
+  astrocyte: 35 cells
+
+--- Results (n_cells=500) ---
+  POOLED: AUROC=0.5428 AUPRC=0.0000 (rand=0.0000) F1=0.0008 [18 pos / 999000 pairs]
+  CSSI-max: AUROC=0.4736 AUPRC=0.0000 (rand=0.0000) F1=0.0007 [18 pos / 999000 pairs]
+  CSSI-mean: AUROC=0.4198 AUPRC=0.0001 (rand=0.0000) F1=0.0036 [18 pos / 999000 pairs]
+
+============================================================
+n_cells = 1000
+Sampled: 997
+Tokenizing...
+Valid: 997
+Extracting attention...
+  Attention: 100/997
+  Attention: 200/997
+  Attention: 300/997
+  Attention: 400/997
+  Attention: 500/997
+  Attention: 600/997
+  Attention: 700/997
+  Attention: 800/997
+  Attention: 900/997
+Attention done in 49.5s
+Building POOLED matrix (top-1000 genes)...
+POOLED matrix: (1000, 1000), 20.0s
+TRRUST edges in pooled genes: 20
+Building CSSI matrices...
+  pvalb GABAergic cortical interneuron: 70 cells
+  glutamatergic neuron: 213 cells
+  GABAergic interneuron: 71 cells
+  oligodendrocyte precursor cell: 51 cells
+  microglial cell: 34 cells
+  oligodendrocyte: 488 cells
+  astrocyte: 70 cells
+
+--- Results (n_cells=1000) ---
+  POOLED: AUROC=0.6027 AUPRC=0.0000 (rand=0.0000) F1=0.0005 [18 pos / 999000 pairs]
+  CSSI-max: AUROC=0.5470 AUPRC=0.0000 (rand=0.0000) F1=0.0005 [18 pos / 999000 pairs]
+  CSSI-mean: AUROC=0.5120 AUPRC=0.0001 (rand=0.0000) F1=0.0028 [18 pos / 999000 pairs]
+
+============================================================
+FINAL SUMMARY
+Method       N      AUROC    AUPRC    F1       pos     
+--------------------------------------------------
+pooled       200    0.5766   0.0000   0.0001   17      
+cssi_max     200    0.5156   0.0000   0.0001   17      
+cssi_mean    200    0.4695   0.0000   0.0001   17      
+pooled       500    0.5428   0.0000   0.0008   18      
+cssi_max     500    0.4736   0.0000   0.0007   18      
+cssi_mean    500    0.4198   0.0001   0.0036   18      
+pooled       1000   0.6027   0.0000   0.0005   18      
+cssi_max     1000   0.5470   0.0000   0.0005   18      
+cssi_mean    1000   0.5120   0.0001   0.0028   18      
+
+Done!

@@ -1,0 +1,31 @@
+# Big artifacts and caches (skip)
+**/.cache/
+**/.venv/
+**/venv/
+**/__pycache__/
+*.incomplete
+
+# Huge data/model outputs
+experiments/**/data/
+experiments/**/outputs/
+experiments/**/results/
+brain-sae-paper/experiments/activations/
+brain-sae-paper/experiments/sae_models/
+brain-sae-paper/experiments/analysis/*.json
+
+# Binary heavy files
+*.h5ad
+*.npy
+*.npz
+*.pt
+*.pth
+*.bin
+*.ckpt
+*.safetensors
+*.pickle
+*.pkl
+*.onnx
+
+# OS
+.DS_Store
+Thumbs.db

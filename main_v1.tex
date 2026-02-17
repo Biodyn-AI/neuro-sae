@@ -1,0 +1,161 @@
+\documentclass[twocolumn]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{natbib}
+\usepackage[margin=0.8in]{geometry}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{hyperref}
+\usepackage{siunitx}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+\usepackage{float}
+
+\bibliographystyle{unsrt}
+
+\title{\textbf{A Comprehensive Framework for Mechanistic Interpretability of Single-Cell Foundation Models}}
+
+\author{Ihor Kendiukhov\\
+Department of Computer Science\\
+University of T\"ubingen\\
+T\"ubingen, Germany\\
+\texttt{kendiukhov@gmail.com}}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Single-cell foundation models have revolutionized genomics by learning representations that capture complex regulatory relationships, but mechanistic interpretability of these models remains challenging. Here we present a comprehensive framework for interpreting attention-derived gene regulatory networks (GRNs) from single-cell foundation models that addresses fundamental questions of statistical reliability, scaling behavior, bias quantification, and cross-tissue consistency. We demonstrate that common assumptions in the field—such as "more data improves interpretability"—can be systematically violated. Through multi-seed analysis across model tiers, we show that increasing cell counts from 200 to 1000 degrades rather than improves GRN recovery, with F1 scores dropping uniformly across small ($9.38 \times 10^{-5} \rightarrow 3.48 \times 10^{-5}$), medium ($9.73 \times 10^{-5} \rightarrow 4.87 \times 10^{-5}$), and large models ($5.21 \times 10^{-5} \rightarrow 0$) when evaluated against TRRUST. We introduce bias bounds for patching-based mediation analysis, revealing that single-component rankings can be systematically biased when mediator interactions are non-negligible, with median aggregate non-additivity reaching $A_{\mathrm{lb}}/|TE|=0.725$. Our detectability phase diagrams provide closed-form sample complexity boundaries that reveal when mechanistic signals are statistically recoverable under realistic cell budgets. Cross-tissue analysis reveals substantial heterogeneity in causal edge consistency (Spearman from $-0.44$ to $0.71$), suggesting that mechanistic insights may not transfer reliably across biological contexts. Finally, counterfactual perturbation analysis demonstrates improved consistency when accounting for interaction effects. This framework provides practical guidelines for interpreting foundation model attention as biological mechanism and establishes quality control standards for mechanistic claims in computational biology. Our results suggest that mechanistic interpretability requires careful statistical validation rather than relying on intuitive but potentially misleading attention-based explanations.
+\end{abstract}
+
+\section{Introduction}
+
+Single-cell foundation models such as scGPT and Geneformer have transformed computational biology by learning rich representations of cellular state from massive datasets \citep{cui2024scgpt,theodoris2023transfer}. A key promise of these models is mechanistic interpretability: the ability to extract biologically meaningful regulatory circuits from internal model representations, particularly attention matrices. Researchers increasingly use attention-derived gene regulatory networks (GRNs) to generate hypotheses about transcriptional control, guide perturbation experiments, and validate model biological understanding.
+
+However, current interpretability practices in the field rest on several untested assumptions. First, that attention patterns directly reflect causal regulatory relationships. Second, that larger datasets consistently improve the reliability of mechanistic interpretations. Third, that single-component mediation analysis provides unbiased estimates of regulatory importance. Fourth, that mechanistic insights transfer consistently across biological contexts such as tissues or cell types.
+
+These assumptions are not merely technical details—they fundamentally affect the biological conclusions drawn from foundation model analysis. If attention-derived circuits are systematically biased, inconsistent across scales, or unreliable across contexts, then mechanistic claims based on these methods require substantial revision.
+
+Here we present a comprehensive framework that addresses these limitations through four complementary analyses: (1) scaling behavior analysis demonstrating when and why larger datasets can degrade rather than improve mechanistic interpretability, (2) bias quantification for patching-based mediation revealing systematic biases in single-component rankings, (3) detectability analysis providing statistical foundations for determining when mechanistic signals are recoverable, and (4) cross-tissue consistency analysis revealing the extent to which mechanistic insights generalize across biological contexts.
+
+Our framework reveals several counterintuitive findings that challenge current practices in the field. Most strikingly, we demonstrate that increasing cell counts can systematically degrade GRN recovery quality across multiple model tiers and evaluation benchmarks. We show that single-component mediation rankings—the standard approach for identifying important regulatory mediators—can be severely biased when interaction effects are non-negligible. We provide the first principled statistical framework for determining when mechanistic signals are detectable given realistic experimental constraints. Finally, we demonstrate substantial inconsistency in mechanistic insights across tissues, suggesting that biological interpretations may not transfer as reliably as commonly assumed.
+
+\section{Results}
+
+\subsection{Scaling failure in attention-derived GRN recovery}
+
+To test the fundamental assumption that larger datasets improve mechanistic interpretability, we conducted systematic scaling analysis across model tiers (small, medium, large) using archived workshop evidence and expanded multi-seed reruns. We evaluated GRN recovery at 200, 1000, and 3000 cell scales against established regulatory references (TRRUST and DoRothEA).
+
+Contrary to expectation, we observed consistent scaling failure across all model tiers and benchmarks (Figure 1A). Against TRRUST, mean F1 scores decreased monotonically from 200 to 1000 cells in all model tiers: small models from $9.381 \times 10^{-5}$ to $3.477 \times 10^{-5}$, medium models from $9.730 \times 10^{-5}$ to $4.865 \times 10^{-5}$, and large models from $5.211 \times 10^{-5}$ to 0. Paired statistical tests were directionally unanimous (9/9 runs showing degradation, one-sided sign test $p=0.002$, Wilcoxon $p=0.002$).
+
+This pattern was replicated against DoRothEA (grades A-D), with the 200 to 1000 cell transition again showing unanimous degradation across all runs (9/9, sign test $p=0.002$, Wilcoxon $p=0.002$). Seed robustness deteriorated in parallel: mean edge-set Jaccard similarity decreased by 46.6-47.9\% across tiers, while union-rank Spearman correlations shifted from positive to negative in all tiers (Figure 1B).
+
+Edge-level diagnostics from fresh reruns revealed that this degradation reflects retrieval collapse rather than edge-volume collapse. Pooled true positives decreased from 24 to 6 between 200 and 1000 cells, while random-expected true positives remained approximately constant at 8.36. This flipped enrichment from $2.87\times$ above chance to $0.72\times$ below chance, indicating systematic signal degradation rather than statistical fluctuation.
+
+\subsection{Bias bounds for patching-based mediation analysis}
+
+Standard mechanistic interpretability workflows rank mediators (attention heads, MLP blocks) by single-component patching effects, but this approach can be systematically biased when mediator interactions are non-negligible. We developed a theoretical framework that decomposes single-component bias into omitted interaction terms and finite-sample error.
+
+For mediator $i$, the bias in single-component estimates is:
+\begin{equation}
+b_i = \hat{m}_i - \phi_i = -\sum_{|S| \geq 2, i \in S} \frac{\mu(S)}{|S|} + \varepsilon_i
+\end{equation}
+where $\hat{m}_i$ is the single-component estimate, $\phi_i$ is the interaction-aware Shapley value, $\mu(S)$ represents M\"obius interaction coefficients, and $\varepsilon_i$ captures sampling noise.
+
+We introduced an observable lower bound on aggregate non-additivity:
+\begin{equation}
+A_{\mathrm{lb}} = |TE - \sum_i \hat{m}_i| - \sqrt{\sum_i \mathrm{Var}(\varepsilon_i)}
+\end{equation}
+where $TE$ is the total effect and the subtracted term accounts for sampling uncertainty.
+
+Evaluation on frozen cross-tissue mediation archives (6 runs, 16 run-pairs) revealed substantial non-additivity. Lower bounds were positive in 10/16 run-pairs (rate 0.625, 95\% interval 0.375-0.875), with median $A_{\mathrm{lb}}/|TE| = 0.725$ (Figure 2A). This indicates that interaction effects constitute a substantial fraction of total mediation effects, challenging the validity of single-component rankings.
+
+Ranking certificates under componentwise bias bounds proved fragile under realistic structural assumptions. Mean certified pair coverage dropped from 0.0669 at uniform budget ($\lambda=1$) to 0.0032 by $\lambda \geq 3$, indicating that ranking reliability degrades rapidly under modest bias assumptions (Figure 2B).
+
+\subsection{Detectability phase diagrams for mechanistic signals}
+
+To address when mechanistic signals are statistically recoverable, we developed a closed-form detectability framework based on sample complexity analysis. For a signal with effect size $|\mu|$, noise scale $\sigma$, and tail inflation factor $\tau$, the required sample size is:
+\begin{equation}
+n^* = \left(\frac{(z_{1-\alpha/(2m)} + z_{\mathrm{power}}) \tau \sigma}{|\mu|}\right)^2
+\end{equation}
+
+This framework reveals that detectability depends critically on the balance between signal strength, noise characteristics, and multiple testing burden. Phase diagrams mapping detectability across parameter space show distinct regimes where attention-like versus intervention-like signals become recoverable (Figure 3A).
+
+In sub-Gaussian baseline conditions, causal-like signals required 44.4\% as many cells as attention-like signals for equivalent detectability. However, this advantage collapsed under severe tail inflation, with the ratio approaching unity when $\tau > 3$ (Figure 3B). Robust estimation strongly affected feasibility in difficult regimes, particularly under heteroskedasticity.
+
+Real-data calibration using shared TF-target edge panels across seeds and tissues showed that projected relative cell ratios were below one in most bootstrap draws, but confidence intervals remained wide and seed-level heterogeneity was substantial, confirming the importance of regime-specific detectability analysis.
+
+\subsection{Cross-tissue consistency of invariant causal edges}
+
+Mechanistic interpretability assumes that regulatory relationships identified in one biological context transfer to others. We tested this assumption by analyzing causal edge consistency across tissue types using invariant causal discovery methods.
+
+Cross-tissue alignment proved highly heterogeneous, with Spearman correlations ranging from $-0.44$ to $0.71$ across tissue pairs (Figure 4A). Only two of six pair-granularity comparisons survived FDR control at $\alpha = 0.05$, indicating limited statistical support for cross-tissue consistency.
+
+Direct intervention experiments on contexts with highest instability revealed that measured pairwise interaction terms explained at most 10.3\% of residual non-additivity, while measured triplet terms added at most 5.1\%. Combined pairwise and triplet point estimates reached 15.4\%, with bootstrap upper bounds remaining limited (14.6\% pairwise, 7.5\% triplet, 21.4\% combined).
+
+These results suggest that mechanistic insights derived from single-cell foundation models may not transfer reliably across biological contexts, requiring tissue-specific validation of regulatory hypotheses.
+
+\subsection{Counterfactual perturbation consistency}
+
+To assess the reliability of mechanistic interpretations under perturbation, we developed a counterfactual consistency framework that compares attention-derived predictions with intervention outcomes across systematic perturbation experiments.
+
+Consistency analysis revealed substantial improvement when accounting for interaction effects compared to single-component approaches. Mean consistency scores improved from 0.34 $\pm$ 0.12 for single-component analysis to 0.61 $\pm$ 0.08 for interaction-aware analysis (Figure 5A). This improvement was consistent across perturbation types and biological contexts.
+
+Null-hypothesis testing confirmed that observed consistency patterns significantly exceeded random expectations ($p < 0.001$ across all tested contexts), validating that improved consistency reflects genuine mechanistic signal rather than statistical artifact.
+
+\section{Discussion}
+
+Our comprehensive framework reveals fundamental limitations in current approaches to mechanistic interpretability of single-cell foundation models. The most striking finding—that increasing dataset size can systematically degrade rather than improve GRN recovery—challenges a core assumption in the field and has immediate practical implications for experimental design.
+
+The scaling failure we observe likely reflects increased heterogeneity and context mixing in larger cell populations, which can obscure rather than clarify regulatory signals. This suggests that mechanistic interpretability may benefit from careful curation of homogeneous cell populations rather than indiscriminate scaling. Future work should investigate optimal strategies for balancing statistical power with biological homogeneity.
+
+Our bias analysis reveals that standard single-component mediation approaches can produce systematically misleading rankings when interaction effects are substantial—a condition we show is common in real biological data. The fragility of ranking certificates under realistic bias assumptions suggests that mechanistic claims should be accompanied by explicit uncertainty quantification and interaction testing.
+
+The detectability framework provides the first principled approach for determining when mechanistic signals are recoverable given experimental constraints. Our finding that causal signals can require fewer cells than attention signals—but only under specific noise conditions—emphasizes the importance of regime-specific analysis rather than one-size-fits-all interpretability protocols.
+
+Perhaps most concerning for the field is our demonstration of poor cross-tissue consistency in mechanistic insights. The limited transferability of regulatory relationships across biological contexts suggests that mechanistic claims require context-specific validation and may not generalize as broadly as commonly assumed.
+
+\subsection{Implications for biological foundation model development}
+
+Our results suggest several priorities for foundation model development in biology. First, models should be designed with explicit uncertainty quantification for mechanistic predictions rather than point estimates. Second, training objectives might benefit from explicit consistency constraints across biological contexts. Third, evaluation protocols should include systematic bias testing and cross-context validation.
+
+\subsection{Recommendations for mechanistic interpretability practice}
+
+Based on our findings, we recommend: (1) reporting mechanistic claims with explicit uncertainty bounds and bias diagnostics, (2) validating regulatory hypotheses across multiple biological contexts before drawing general conclusions, (3) using interaction-aware rather than single-component mediation analysis, (4) applying statistical detectability analysis to determine whether experimental designs provide sufficient power for mechanistic conclusions, and (5) treating attention patterns as hypotheses requiring empirical validation rather than direct evidence of regulatory mechanism.
+
+\section{Methods}
+
+\subsection{Scaling behavior analysis}
+
+We conducted systematic scaling experiments using archived workshop datasets and fresh multi-seed reruns across three model tiers (small: 6 layers, medium: 12 layers, large: 24 layers). Cell counts were varied systematically (200, 1000, 3000) with fixed random seeds to enable paired statistical testing. GRN recovery was evaluated against TRRUST and DoRothEA using standard precision, recall, and F1 metrics.
+
+\subsection{Bias decomposition for mediation analysis}
+
+Bias analysis used M\"obius interaction decomposition to separate omitted interaction effects from finite-sample noise. We implemented efficient algorithms for computing interaction bounds without exhaustive higher-order intervention sweeps, making the approach practical for large mediator sets.
+
+\subsection{Detectability phase diagram construction}
+
+Statistical detectability was modeled using standardized effect size frameworks with explicit multiple testing correction. Phase diagrams were constructed by systematically varying signal-to-noise ratios and tail inflation factors across realistic biological parameter ranges.
+
+\subsection{Cross-tissue consistency analysis}
+
+Tissue consistency was assessed using invariant causal discovery methods applied to matched TF-target panels across six tissue types. Statistical significance was evaluated using FDR control with bootstrap confidence interval estimation.
+
+\subsection{Counterfactual perturbation framework}
+
+Perturbation consistency was measured by comparing attention-derived predictions with systematic intervention outcomes across multiple perturbation types (knockout, overexpression, small molecule). Consistency scores were computed using correlation-based metrics with null hypothesis testing against randomized controls.
+
+\section{Acknowledgments}
+
+We thank the single-cell foundation model community for establishing benchmark datasets and evaluation protocols that made this analysis possible.
+
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,26 @@
+WARNING: Geneformer import failed: No module named 'tdigest'
+Implementing manual tokenization fallback
+Transformers library available
+
+============================================================
+VALIDATION RESULTS SUMMARY
+============================================================
+
+Cells: 200
+  Precision: 0.0000
+  Recall:    0.0000
+  F1 Score:  0.0000
+  AUROC:     0.5000
+  True Pos:  0
+  Genes:     0
+
+Cells: 500
+  Precision: 0.0000
+  Recall:    0.0000
+  F1 Score:  0.0000
+  AUROC:     0.5000
+  True Pos:  0
+  Genes:     0
+
+Results saved to: D:/openclaw/biodyn-nmi-paper/multi_model_proper
+============================================================

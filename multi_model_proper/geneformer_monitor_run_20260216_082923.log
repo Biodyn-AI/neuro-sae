@@ -1,0 +1,89 @@
+Device: cpu
+
+=== Step 1: Loading Geneformer gc30M dictionaries ===
+  Tokens: 25426, Gene names: 40248, Medians: 25424
+
+=== Step 2: Loading DLPFC data ===
+  Shape: (11202, 32344)
+
+=== Step 3: Tokenizing cells ===
+  19905/32344 genes have token mapping
+  Subsetted matrix: (11202, 19905)
+  Total valid cells: 11202
+
+=== Step 4: Loading Geneformer V1-10M ===
+  Model loaded: 6L x 4H
+
+=== Step 5: Loading reference GRNs ===
+  TRRUST: 8427 unique edges
+  DoRothEA: 276562 unique edges
+
+=== Step 6: Attention-based GRN inference ===
+
+=== Step 7: Validation experiments ===
+
+--- 200 cells ---
+    100/200 cells, 871241 edges
+    200/200 cells, 1564125 edges
+  Time: 16.5s, Edges: 1564125
+    trrust: 27859 edges, 39 positives (0.14%)
+    AUROC=0.4442, AUPRC=0.0014
+    Top-500: P=0.0000 R=0.0000 F1=0.0000
+    Top-1000: P=0.0010 R=0.0001 F1=0.0002
+    Top-5000: P=0.0018 R=0.0011 F1=0.0013
+    dorothea: 1514316 edges, 2140 positives (0.14%)
+    AUROC=0.4729, AUPRC=0.0013
+    Top-500: P=0.0040 R=0.0000 F1=0.0000
+    Top-1000: P=0.0020 R=0.0000 F1=0.0000
+    Top-5000: P=0.0012 R=0.0000 F1=0.0000
+
+--- 500 cells ---
+    100/500 cells, 863576 edges
+    200/500 cells, 1564502 edges
+    300/500 cells, 2181576 edges
+    400/500 cells, 2742303 edges
+    500/500 cells, 3269294 edges
+  Time: 43.4s, Edges: 3269294
+    trrust: 58870 edges, 71 positives (0.12%)
+    AUROC=0.5485, AUPRC=0.0015
+    Top-500: P=0.0000 R=0.0000 F1=0.0000
+    Top-1000: P=0.0000 R=0.0000 F1=0.0000
+    Top-5000: P=0.0014 R=0.0008 F1=0.0010
+    dorothea: 3156089 edges, 4560 positives (0.14%)
+    AUROC=0.4864, AUPRC=0.0014
+    Top-500: P=0.0000 R=0.0000 F1=0.0000
+    Top-1000: P=0.0000 R=0.0000 F1=0.0000
+    Top-5000: P=0.0010 R=0.0000 F1=0.0000
+
+--- 1000 cells ---
+    100/1000 cells, 838667 edges
+    200/1000 cells, 1529406 edges
+    300/1000 cells, 2154623 edges
+    400/1000 cells, 2723256 edges
+    500/1000 cells, 3231176 edges
+    600/1000 cells, 3713828 edges
+    700/1000 cells, 4172892 edges
+    800/1000 cells, 4599316 edges
+    900/1000 cells, 5006441 edges
+    1000/1000 cells, 5382833 edges
+  Time: 85.8s, Edges: 5382833
+    trrust: 94896 edges, 115 positives (0.12%)
+    AUROC=0.5224, AUPRC=0.0013
+    Top-500: P=0.0000 R=0.0000 F1=0.0000
+    Top-1000: P=0.0000 R=0.0000 F1=0.0000
+    Top-5000: P=0.0012 R=0.0007 F1=0.0009
+    dorothea: 5189123 edges, 7483 positives (0.14%)
+    AUROC=0.4863, AUPRC=0.0014
+    Top-500: P=0.0000 R=0.0000 F1=0.0000
+    Top-1000: P=0.0000 R=0.0000 F1=0.0000
+    Top-5000: P=0.0006 R=0.0000 F1=0.0000
+
+================================================================================
+FIXED VALIDATION RESULTS
+================================================================================
+  200 cells: TRRUST AUROC=0.44422385666095227, DoRothEA AUROC=0.47288271953731936
+  500 cells: TRRUST AUROC=0.5485009925195145, DoRothEA AUROC=0.48639734791527234
+  1000 cells: TRRUST AUROC=0.5224364817201026, DoRothEA AUROC=0.4863252019832402
+
+Results saved to: D:\openclaw\biodyn-nmi-paper\multi_model_proper\geneformer_grn_validation_fixed_results.json
+Bug fix: Now uses gc30M dictionaries with correct Ensembl ID mapping

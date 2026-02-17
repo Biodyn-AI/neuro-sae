@@ -1,83 +1,154 @@
-# Unified Nature Machine Intelligence Paper
+# neuro-sae
 
-## Paper Selection and Rationale
+This repository is a research workspace for mechanistic-interpretability experiments on single-cell foundation models (mainly scGPT and Geneformer), plus manuscript assets and generated reports.
 
-This unified paper combines the strongest results from 5 key Biodyn mechanistic interpretability papers to create a comprehensive framework for interpreting single-cell foundation models. The selection was based on:
+It is not a packaged Python library. Most workflows are script-driven, and several scripts rely on local absolute paths from the original development environment.
 
-1. **Novel, counterintuitive findings** that challenge field assumptions
-2. **Strong theoretical foundations** with practical applications  
-3. **Coherent narrative** covering the full scope of mechanistic interpretability
-4. **Complementary methodological approaches** that strengthen each other
-5. **High impact potential** for Nature Machine Intelligence readership
+## Scope
 
-## Selected Papers
+The code and artifacts here cover several related tracks:
 
-### 1. Subproject 06 - Scaling Failure Analysis
-**Original target**: Neural Networks  
-**Key contribution**: Demonstrates that increasing cell counts from 200→1000→3000 can systematically degrade rather than improve GRN recovery across all model tiers (small/medium/large). This challenges the fundamental assumption that "more data = better interpretability."
+- Attention-based gene regulatory network (GRN) inference and evaluation
+- Scaling behavior characterization across cell counts
+- Baseline method comparisons (correlation, MI, GENIE3/GRNBoost2)
+- CSSI (Cell-State Stratified Interpretability) cross-dataset and cross-tissue validation
+- CRISPRi perturbation validation pipelines
+- Synthetic validation studies with known ground truth
+- Paper drafts, sections, and generated figures/reports
 
-**Why included**: This is a striking, counterintuitive finding that will grab NMI reviewers' attention and has major implications for how the field approaches data collection and analysis.
+## Repository Layout
 
-### 2. Subproject 22 - Bias Bounds for Patching-Based Mediation  
-**Original target**: PLOS Computational Biology  
-**Key contribution**: Provides theoretical framework for quantifying bias in single-component mediation analysis when interaction effects are non-negligible. Shows that standard ranking approaches can be systematically misleading.
+- `analysis/`: validation and baseline analysis scripts (including dependency smoke tests)
+- `baseline_comparison/`: GRN baseline scripts and summary outputs
+- `brain-sae-paper/`: SAE-focused manuscript and experiment scripts
+- `cssi_real/`: CSSI validation scripts and outputs
+- `experiments/`: scaling and perturbation validation experiments
+- `figures/`: generated figure assets
+- `multi_model/`, `multi_model_extended/`, `multi_model_proper/`: multi-model/Geneformer analysis scripts and reports
+- `novel_method/`: CSSI method experiments and figures
+- `paper_docs/root_paper/`: unified NMI manuscript source
+- `reports/`: generated markdown reports summarizing major analyses
+- `results/`: legacy result snapshots
+- `synthetic_validation/`: synthetic data validation pipeline
 
-**Why included**: Strong theoretical foundation that addresses a fundamental methodological issue affecting most mechanistic interpretability studies. Provides practical tools (bias bounds, ranking certificates) that researchers can immediately apply.
+## Environment Setup
 
-### 3. Subproject 21 - Detectability Phase Diagram
-**Original target**: Annals of Applied Statistics  
-**Key contribution**: Establishes closed-form statistical foundations for determining when mechanistic signals are recoverable under realistic experimental constraints. Shows regime-dependent performance of attention vs intervention signals.
+Python 3.10+ is recommended.
 
-**Why included**: Provides the statistical rigor that NMI expects. Moves the field from ad-hoc evaluation to principled statistical analysis. Complements the bias analysis by addressing when signals are detectable at all.
+Install core dependencies:
 
-### 4. Subproject 20 - Invariant Causal Edges Across Tissues
-**Original target**: PLOS Computational Biology  
-**Key contribution**: Reveals substantial heterogeneity in mechanistic insights across tissue types (Spearman -0.44 to 0.71), challenging assumptions about transferability of regulatory relationships.
+```bash
+python -m pip install \
+  numpy pandas scipy scikit-learn matplotlib seaborn \
+  scanpy anndata h5py torch transformers statsmodels \
+  networkx requests
+```
 
-**Why included**: Addresses biological validity and generalization—key concerns for NMI. Shows that mechanistic claims may not transfer as broadly as assumed, requiring context-specific validation.
+Optional dependencies used by specific scripts:
 
-### 5. Subproject 11 - Counterfactual Perturbation Consistency
-**Original target**: Genome Biology  
-**Key contribution**: Develops framework for validating mechanistic interpretations against perturbation experiments. Shows improved consistency when accounting for interaction effects.
+```bash
+python -m pip install arboreto geneformer
+```
 
-**Why included**: Provides validation methodology that connects computational predictions to experimental reality. Demonstrates that the framework's interaction-aware approaches yield more reliable biological predictions.
+Quick dependency check:
 
-## Unified Narrative
+```bash
+python analysis/tests/test_deps.py
+```
 
-These papers combine into a coherent story:
+## Quick Start (Self-Contained / Low-Friction)
 
-1. **Foundation**: Statistical frameworks for when mechanistic signals are detectable and how to quantify bias (Papers 2, 3)
-2. **Core finding**: Scaling behavior is counterintuitive—more data can hurt rather than help (Paper 1)  
-3. **Biological validity**: Mechanistic insights don't transfer reliably across contexts (Paper 4)
-4. **Validation**: Interaction-aware approaches improve consistency with experimental validation (Paper 5)
+These scripts can run without external model checkpoints:
 
-## Why This Combination for NMI
+### 1) Synthetic validation pipeline
 
-**Scope**: Covers methodology, theory, empirical findings, and biological validation—exactly what NMI wants to see.
+```bash
+python synthetic_validation/synthetic_validation.py
+python synthetic_validation/reproduce_analysis.py --analysis scaling
+python synthetic_validation/reproduce_analysis.py --analysis sweep
+```
 
-**Impact**: Challenges fundamental assumptions in the field while providing practical solutions.
+### 2) Perturbation validation demo (simulated)
 
-**Novelty**: Multiple counterintuitive findings supported by rigorous analysis.
+```bash
+python experiments/perturbation_validation/demo_perturbation_validation.py
+```
 
-**Utility**: Provides immediately applicable tools and guidelines for the community.
+Note: this demo is intentionally simulated and writes outputs under a hardcoded path in the script.
 
-**Biological insight**: Demonstrates that proper statistical analysis reveals important limitations in how we interpret foundation models for biology.
+## Data-Dependent Pipelines
 
-## Papers NOT Included
+Most core pipelines require local datasets/checkpoints and often hardcoded paths. Before running, inspect and update path constants at the top of each script.
 
-Several strong papers were not included to maintain focus and coherence:
+### Scaling characterization (Geneformer attention)
 
-- **Subproject 25 - Evaluation Invariance Metrics**: Excellent methodological work but overlaps with detectability analysis
-- **Subproject 28 - Cell State Conditional Circuits**: Interesting but more specialized application
-- **Subproject 30+ papers**: Many focus on specific applications rather than fundamental methodology
+```bash
+python experiments/scaling_characterization/scaling_characterization.py
+```
 
-## Target Impact
+Expected resources include:
 
-This unified paper should:
-1. **Change practice** in how researchers interpret foundation models
-2. **Establish standards** for statistical rigor in mechanistic interpretability  
-3. **Provide tools** that researchers can immediately apply
-4. **Challenge assumptions** that currently guide the field
-5. **Bridge** computational methodology and biological insight
+- Tabula Sapiens immune `.h5ad`
+- Geneformer model + token dictionaries
+- TRRUST reference network
 
-The combination creates a comprehensive framework that is greater than the sum of its parts while maintaining the rigorous standards expected by Nature Machine Intelligence.
+### CSSI validation
+
+```bash
+python cssi_real/run_cssi_validation.py --both
+# or
+python cssi_real/cssi_cross_dataset_validation.py
+python cssi_real/cssi_cross_tissue_validation.py --source-tissue immune --target-tissue kidney
+```
+
+### Baseline comparison
+
+```bash
+python baseline_comparison/fast_baseline.py
+python baseline_comparison/baseline_comparison.py
+```
+
+### Saturation analysis
+
+```bash
+python analysis/validation/saturation_analysis.py \
+  --data_path /path/to/raw_data_dir \
+  --output_dir /path/to/output_dir
+```
+
+## Manuscripts
+
+Two main manuscript roots are present:
+
+- `brain-sae-paper/main.tex`
+- `paper_docs/root_paper/main.tex`
+
+Compile from the manuscript directory, for example:
+
+```bash
+cd paper_docs/root_paper
+pdflatex main.tex
+bibtex main
+pdflatex main.tex
+pdflatex main.tex
+```
+
+Note: the top-level `Makefile` currently expects `main.tex` at repo root and may not match active manuscript locations.
+
+## Key Existing Reports
+
+- `reports/SCALING_CHARACTERIZATION_REPORT.md`
+- `reports/SATURATION_ANALYSIS_REPORT.md`
+- `reports/PERTURBATION_VALIDATION_REPORT.md`
+- `reports/CSSI_CROSS_VALIDATION_REPORT.md`
+- `multi_model_proper/REPORT.md`
+
+These files summarize already-run analyses and are a good starting point for understanding current findings.
+
+## Practical Notes
+
+- Several scripts assume WSL + CUDA setup.
+- Many scripts use absolute Windows/WSL paths (for example `/mnt/d/...` or `D:\...`).
+- This repository contains exploratory and report-generation code; not all scripts are productionized or parameterized.
+
+If you want to make this repo fully reproducible on a new machine, the first step is to centralize path/config handling (for example, via CLI args or a shared YAML config) and remove hardcoded filesystem assumptions.

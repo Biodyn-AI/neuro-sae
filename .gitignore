@@ -29,3 +29,10 @@ brain-sae-paper/experiments/analysis/*.json
 # OS
 .DS_Store
 Thumbs.db
+
+# paper build artifacts
+*.aux
+*.bbl
+*.blg
+*.log
+*.out

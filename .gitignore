@@ -1,20 +1,18 @@
-# Big artifacts and caches (skip)
-**/.cache/
-**/.venv/
-**/venv/
-**/__pycache__/
-*.incomplete
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+venv/
 
-# Huge data/model outputs
-experiments/**/data/
-experiments/**/outputs/
-experiments/**/results/
-brain-sae-paper/experiments/activations/
-brain-sae-paper/experiments/sae_models/
-brain-sae-paper/experiments/analysis/*.json
+# Data files (too large for git — download via scripts/download_data.sh)
+data/*.h5ad
+external/
 
-# Binary heavy files
-*.h5ad
+# Pipeline outputs (regenerable via scripts/run_pipeline.sh)
+outputs/
+
+# Binary files
 *.npy
 *.npz
 *.pt
@@ -24,15 +22,7 @@ brain-sae-paper/experiments/analysis/*.json
 *.safetensors
 *.pickle
 *.pkl
-*.onnx
 
 # OS
 .DS_Store
 Thumbs.db
-
-# paper build artifacts
-*.aux
-*.bbl
-*.blg
-*.log
-*.out

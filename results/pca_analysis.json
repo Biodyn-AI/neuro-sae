@@ -1,0 +1,30 @@
+{
+  "mean_best_auroc": 0.8625997539595541,
+  "n_types_above_0.8": 18,
+  "per_type_auroc": {
+    "B cell": 0.78283391723589,
+    "Basophil": 0.9628276209677419,
+    "CD4+ T cell": 0.7112940379403794,
+    "CD8+ T cell": 0.790691361003861,
+    "Classical monocyte": 0.8747897435897436,
+    "Common myeloid progenitor": 0.9173869346733668,
+    "Erythrocyte": 0.9628865979381444,
+    "Erythroid progenitor": 0.9495477386934673,
+    "Granulocyte": 0.9477386934673366,
+    "Hematopoietic precursor": 0.8820100502512562,
+    "Hematopoietic stem cell": 0.8509389671361502,
+    "Intermediate monocyte": 0.8490452261306533,
+    "Macrophage": 0.7962136176276935,
+    "Monocyte": 0.8063425787851676,
+    "NK T cell": 0.9071356783919597,
+    "NK cell": 0.7719723691945914,
+    "Naive CD4+ T cell": 0.8012244897959184,
+    "Neutrophil": 0.9228428772039319,
+    "Non-classical monocyte": 0.9233870967741936,
+    "Plasma cell": 0.8061763027767213,
+    "Plasmacytoid DC": 0.8265500616661061,
+    "Regulatory T cell": 0.7898144151920587,
+    "T cell": 0.8906532663316583,
+    "fibroblast": 0.9780904522613065
+  }
+}

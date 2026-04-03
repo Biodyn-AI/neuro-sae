@@ -1,0 +1,194 @@
+{
+  "B cell": {
+    "n": 189,
+    "best_auroc": 0.6997436047990918,
+    "ci_low": 0.6649316386643531,
+    "ci_high": 0.7351106187669453,
+    "ci_width": 0.07017898010259216,
+    "well_powered": true
+  },
+  "Basophil": {
+    "n": 8,
+    "best_auroc": 0.9172757056451613,
+    "ci_low": 0.7774020100502513,
+    "ci_high": 0.991281822246611,
+    "ci_width": 0.21387981219635965,
+    "well_powered": false
+  },
+  "CD4+ T cell": {
+    "n": 180,
+    "best_auroc": 0.6421815718157182,
+    "ci_low": 0.6027623508881672,
+    "ci_high": 0.6820041882781613,
+    "ci_width": 0.07924183738999413,
+    "well_powered": true
+  },
+  "CD8+ T cell": {
+    "n": 112,
+    "best_auroc": 0.7464406370656371,
+    "ci_low": 0.7007093238963532,
+    "ci_high": 0.7936593546264581,
+    "ci_width": 0.09295003073010488,
+    "well_powered": true
+  },
+  "Classical monocyte": {
+    "n": 25,
+    "best_auroc": 0.9085128205128205,
+    "ci_low": 0.8378049074794063,
+    "ci_high": 0.9595160959286112,
+    "ci_width": 0.12171118844920492,
+    "well_powered": false
+  },
+  "Common myeloid progenitor": {
+    "n": 5,
+    "best_auroc": 0.9694472361809046,
+    "ci_low": 0.9324216100623843,
+    "ci_high": 0.9930923448367815,
+    "ci_width": 0.06067073477439722,
+    "well_powered": false
+  },
+  "Erythrocyte": {
+    "n": 30,
+    "best_auroc": 0.9519072164948453,
+    "ci_low": 0.9099413100921058,
+    "ci_high": 0.9785024549634914,
+    "ci_width": 0.06856114487138565,
+    "well_powered": false
+  },
+  "Erythroid progenitor": {
+    "n": 5,
+    "best_auroc": 0.9911557788944724,
+    "ci_low": 0.9809619238476954,
+    "ci_high": 0.997997997997998,
+    "ci_width": 0.017036074150302616,
+    "well_powered": false
+  },
+  "Granulocyte": {
+    "n": 5,
+    "best_auroc": 0.8928643216080402,
+    "ci_low": 0.8561244979919679,
+    "ci_high": 0.9357687262074349,
+    "ci_width": 0.07964422821546702,
+    "well_powered": false
+  },
+  "Hematopoietic precursor": {
+    "n": 5,
+    "best_auroc": 0.872462311557789,
+    "ci_low": 0.6478646536524395,
+    "ci_high": 0.9844377510040161,
+    "ci_width": 0.3365730973515766,
+    "well_powered": false
+  },
+  "Hematopoietic stem cell": {
+    "n": 6,
+    "best_auroc": 0.8239436619718309,
+    "ci_low": 0.5915577889447237,
+    "ci_high": 0.9954909819639279,
+    "ci_width": 0.4039331930192043,
+    "well_powered": false
+  },
+  "Intermediate monocyte": {
+    "n": 5,
+    "best_auroc": 0.9567839195979899,
+    "ci_low": 0.9157479117378856,
+    "ci_high": 0.9908151721574426,
+    "ci_width": 0.07506726041955702,
+    "well_powered": false
+  },
+  "Macrophage": {
+    "n": 127,
+    "best_auroc": 0.7012519053674992,
+    "ci_low": 0.6543531225516633,
+    "ci_high": 0.7466990650254061,
+    "ci_width": 0.09234594247374273,
+    "well_powered": true
+  },
+  "Monocyte": {
+    "n": 42,
+    "best_auroc": 0.788386022467442,
+    "ci_low": 0.709473529413555,
+    "ci_high": 0.8588794090592542,
+    "ci_width": 0.14940587964569918,
+    "well_powered": false
+  },
+  "NK T cell": {
+    "n": 5,
+    "best_auroc": 0.7729648241206031,
+    "ci_low": 0.5485790705449682,
+    "ci_high": 0.9152104913344277,
+    "ci_width": 0.36663142078945943,
+    "well_powered": false
+  },
+  "NK cell": {
+    "n": 28,
+    "best_auroc": 0.7804232804232805,
+    "ci_low": 0.6808561027939547,
+    "ci_high": 0.8653436135738003,
+    "ci_width": 0.1844875107798456,
+    "well_powered": false
+  },
+  "Naive CD4+ T cell": {
+    "n": 20,
+    "best_auroc": 0.6833673469387755,
+    "ci_low": 0.5707430235179082,
+    "ci_high": 0.8068297899939186,
+    "ci_width": 0.23608676647601046,
+    "well_powered": false
+  },
+  "Neutrophil": {
+    "n": 116,
+    "best_auroc": 0.9400550007801528,
+    "ci_low": 0.9096480302975674,
+    "ci_high": 0.9661939572247121,
+    "ci_width": 0.056545926927144774,
+    "well_powered": true
+  },
+  "Non-classical monocyte": {
+    "n": 8,
+    "best_auroc": 0.9585433467741935,
+    "ci_low": 0.9350603739691078,
+    "ci_high": 0.9771438521172854,
+    "ci_width": 0.04208347814817759,
+    "well_powered": false
+  },
+  "Plasma cell": {
+    "n": 44,
+    "best_auroc": 0.8247194750855839,
+    "ci_low": 0.7509816637270142,
+    "ci_high": 0.895237056428156,
+    "ci_width": 0.14425539270114174,
+    "well_powered": false
+  },
+  "Plasmacytoid DC": {
+    "n": 9,
+    "best_auroc": 0.7975109317188025,
+    "ci_low": 0.629134334593317,
+    "ci_high": 0.9702627794517019,
+    "ci_width": 0.3411284448583849,
+    "well_powered": false
+  },
+  "Regulatory T cell": {
+    "n": 7,
+    "best_auroc": 0.8470004315925767,
+    "ci_low": 0.689150139342124,
+    "ci_high": 0.9421830229529056,
+    "ci_width": 0.2530328836107816,
+    "well_powered": false
+  },
+  "T cell": {
+    "n": 5,
+    "best_auroc": 0.7965829145728643,
+    "ci_low": 0.5044227511247393,
+    "ci_high": 0.9989989989989989,
+    "ci_width": 0.4945762478742596,
+    "well_powered": false
+  },
+  "fibroblast": {
+    "n": 5,
+    "best_auroc": 0.994572864321608,
+    "ci_low": 0.9891992111591528,
+    "ci_high": 0.998491475964219,
+    "ci_width": 0.009292264805066286,
+    "well_powered": false
+  }
+}

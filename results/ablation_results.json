@@ -1,0 +1,18 @@
+{
+  "Macrophage": {
+    "feature_idx": 560,
+    "original_auroc": 0.7012519053674992,
+    "ablated_best_auroc": 0.6679925318613524,
+    "delta_mse_target": 0.00866997241973877,
+    "delta_mse_other": 0.0011457055807113647,
+    "selectivity_ratio": 7.5673651695251465
+  },
+  "B cell": {
+    "feature_idx": 719,
+    "original_auroc": 0.6997436047990918,
+    "ablated_best_auroc": 0.6589487144357675,
+    "delta_mse_target": 0.0018107742071151733,
+    "delta_mse_other": 3.129243850708008e-06,
+    "selectivity_ratio": 578.6619262695312
+  }
+}
